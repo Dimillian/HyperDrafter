@@ -4,12 +4,13 @@ A sophisticated AI-powered writing editor that provides intelligent feedback as 
 
 ## ✨ Key Features
 
-- **📝 Paper-Like Editor**: Typewriter font with elegant paper styling and dark/light themes
-- **🤖 Intelligent AI Analysis**: Real-time feedback with category-based highlighting system
+- **📝 Professional Editor**: TipTap-powered editor with typewriter font and elegant paper styling
+- **🤖 Intelligent AI Analysis**: Real-time feedback with category-based highlighting system using TipTap marks
 - **🎯 Contextual Highlights**: Seven feedback categories (expansion, structure, factual, logic, clarity, evidence, basic) with distinct colors
-- **📊 Smart Sidebar**: Compact paragraph indicators showing first 3 words with expandable detailed feedback
+- **📊 Smart Sidebar**: Compact paragraph indicators with smooth animations and expandable detailed feedback
 - **🔄 Document Context**: AI analyzes each paragraph within full document context for better suggestions
-- **⚡ Stable Architecture**: Robust contentEditable implementation preventing cursor jumping and text corruption
+- **⚡ Modern Architecture**: TipTap framework with custom extensions for paragraph-based AI analysis
+- **✨ Smooth Animations**: Polished transitions for paragraph selection and visual state changes
 
 ## 🎨 Design Philosophy
 
@@ -38,10 +39,12 @@ npm run typecheck
 ## 🏗️ Architecture
 
 ### Editor Core
-- **Paragraph-based**: Each paragraph is independently editable with AI analysis
+- **TipTap Framework**: Professional editor built on TipTap with custom extensions
+- **Paragraph-based Architecture**: Each paragraph maintains unique ID with independent AI analysis
 - **Real-time Feedback**: 1-second debounced analysis after typing stops
-- **Highlight System**: Character-offset based highlighting with overlap resolution
+- **TipTap Marks**: Advanced highlighting system using TipTap's mark system with overlap resolution
 - **Theme Management**: React context with localStorage persistence
+- **Smooth Animations**: CSS transitions for paragraph selection and state changes
 
 ### AI Integration
 - **Two-stage Analysis**: Efficient span identification followed by detailed feedback
@@ -56,38 +59,47 @@ HyperDrafter/
 ├── components/
 │   ├── editor/          # Core editing components
 │   │   ├── Editor.tsx   # Main editor orchestration
-│   │   └── Paragraph.tsx # Individual paragraph editing
+│   │   └── TipTapEditor.tsx # TipTap editor wrapper
 │   ├── sidebar/         # AI feedback interface
 │   │   ├── Sidebar.tsx  # Main sidebar with paragraph indicators
 │   │   └── HighlightCard.tsx # Individual feedback cards
 │   └── ui/              # Shared UI components
-├── lib/ai/              # AI integration layer
-│   ├── anthropic.ts     # Anthropic API service
-│   └── prompts/         # AI prompts and templates
+├── lib/
+│   ├── ai/              # AI integration layer
+│   │   ├── anthropic.ts # Anthropic API service
+│   │   └── prompts/     # AI prompts and templates
+│   └── tiptap/          # TipTap extensions
+│       └── extensions/  # Custom TipTap extensions
+│           ├── ParagraphWithId.ts # Paragraph node with unique IDs
+│           └── AIHighlight.ts     # AI highlight mark
 ├── contexts/            # React contexts (theme, etc.)
 └── hooks/               # Custom React hooks
 ```
 
 ## 🎯 Current Status
 
-HyperDrafter has a **stable core** with:
-- ✅ Robust text editing without cursor issues
-- ✅ Real-time AI analysis with category-based highlights  
-- ✅ Modern paper-like UI with theme switching
-- ✅ Interactive sidebar with paragraph navigation
+HyperDrafter has a **professional core** with:
+- ✅ TipTap-powered editor with custom extensions
+- ✅ Paragraph-based AI analysis maintaining workflow
+- ✅ Real-time AI analysis with TipTap marks for highlighting
+- ✅ Modern paper-like UI with smooth animations
+- ✅ Interactive sidebar with polished transitions
 - ✅ Document-context aware AI feedback
+- ✅ Preserved cursor positioning during paragraph selection
 
 ## 🔮 Next Steps
 
 - **Draft Management**: Auto-save and document persistence
 - **Export System**: Markdown, TXT, and HTML export
-- **Enhanced Paragraph Types**: Titles, lists, and formatting
+- **TipTap Formatting**: Bold, italic, and text formatting extensions
+- **Enhanced Node Types**: Headings, lists, blockquotes using TipTap nodes
 - **Keyboard Navigation**: Streamlined highlight traversal
 
 ## 🛠️ Tech Stack
 
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript 5.8+
+- **Editor**: TipTap 3.0+ with custom extensions
 - **Styling**: Tailwind CSS 3.4+ with custom design system
 - **UI**: React 19 with custom hooks and contexts
 - **AI**: Anthropic Claude integration with intelligent prompting

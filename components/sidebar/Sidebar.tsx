@@ -126,22 +126,23 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
                 <button 
                   onClick={() => onParagraphSelect(paragraphId)}
                   className={`
-                    w-full flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-left
+                    w-full flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-300 ease-in-out text-left transform
                     ${isActive 
-                      ? 'bg-purple-500/10 border-purple-500/30' 
-                      : 'bg-[hsl(var(--paper-border))]/30 border-[hsl(var(--paper-border))] hover:bg-[hsl(var(--paper-border))]/50'
+                      ? 'bg-purple-500/15 border-purple-500/40 shadow-lg shadow-purple-500/20 scale-[1.02] ring-1 ring-purple-500/20' 
+                      : 'bg-[hsl(var(--paper-border))]/30 border-[hsl(var(--paper-border))] hover:bg-[hsl(var(--paper-border))]/50 hover:shadow-md hover:scale-[1.01]'
                     }
                   `}
                 >
                   {/* Paragraph indicator */}
                   <div className={`
-                    w-3 h-3 rounded-full flex-shrink-0
+                    w-3 h-3 rounded-full flex-shrink-0 transition-all duration-300 ease-in-out
                     ${isAnalyzing 
-                      ? 'bg-purple-500 animate-pulse' 
+                      ? 'bg-purple-500 animate-pulse shadow-lg shadow-purple-500/50' 
                       : totalCount > 0 
-                        ? getCategoryIndicatorColor(highestCategory)
+                        ? `${getCategoryIndicatorColor(highestCategory)} shadow-sm`
                         : 'bg-[hsl(var(--paper-foreground))]/30'
                     }
+                    ${isActive ? 'scale-110 shadow-lg' : 'scale-100'}
                   `} />
                   
                   {/* Content preview */}
@@ -174,7 +175,7 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
 
                 {/* Expanded cards for active paragraph */}
                 {isActive && paragraphHighlights.length > 0 && (
-                  <div className="ml-5 space-y-2 border-l-2 border-purple-500/30 pl-3">
+                  <div className="ml-5 mt-3 space-y-2 border-l-2 border-purple-500/30 pl-3 slide-in-cards">
                     {paragraphHighlights
                       .sort((a: any, b: any) => {
                         const categoryOrder: Record<string, number> = { 

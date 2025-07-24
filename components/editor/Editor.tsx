@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Paragraph } from './Paragraph'
+import { TipTapEditor } from './TipTapEditor'
 import { useParagraphDebounce } from '@/hooks/useParagraphDebounce'
 import { Header } from '@/components/ui'
 import { SettingsModal } from '@/components/ui/SettingsModal'
@@ -36,7 +36,6 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
   }, [activeParagraph])
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [analyzingParagraphs, setAnalyzingParagraphs] = useState<Set<string>>(new Set())
-  const editorRef = useRef<HTMLDivElement>(null)
   
   // Track last analyzed content for each paragraph to prevent duplicate analysis
   const lastAnalyzedContent = useRef<Record<string, string>>({})
@@ -164,21 +163,76 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     // This will be triggered when sidebar calls onParagraphSelect
   }, [])
 
-  const handleParagraphChange = (id: string, content: string) => {
-    setParagraphs(prev => prev.map(p => 
-      p.id === id ? { ...p, content } : p
-    ))
+  const handleContentChange = useCallback((newParagraphs: Array<{ id: string; content: string }>) => {
+    // Check which paragraphs have changed content
+    const changedParagraphs = newParagraphs.filter(newP => {
+      const oldP = paragraphs.find(p => p.id === newP.id)
+      return !oldP || oldP.content !== newP.content
+    })
     
-    // Cancel any ongoing analysis for this paragraph since content changed
+    // Check if new paragraphs were created (Enter key pressed)
+    const newParagraphsCreated = newParagraphs.filter(newP => !paragraphs.find(p => p.id === newP.id))
+    
+    // Only update if there are actual changes
+    if (changedParagraphs.length === 0 && newParagraphs.length === paragraphs.length) {
+      return
+    }
+    
+    // Update paragraphs state
+    setParagraphs(newParagraphs)
+    
+    // If new paragraphs were created (Enter pressed), analyze the previous paragraph
+    if (newParagraphsCreated.length > 0 && localActiveParagraph) {
+      const previousParagraph = paragraphs.find(p => p.id === localActiveParagraph)
+      if (previousParagraph && previousParagraph.content.trim()) {
+        // Only analyze if content hasn't been analyzed yet
+        if (lastAnalyzedContent.current[localActiveParagraph] !== previousParagraph.content) {
+          analyzeChangedParagraph(previousParagraph.id)
+        }
+      }
+    }
+    
+    // Handle changed paragraphs - clear highlights when content changes
+    changedParagraphs.forEach(paragraph => {
+      const { id } = paragraph
+      
+      // Clear highlights for this paragraph immediately since the text has changed
+      const updatedHighlights = highlights.filter(h => h.paragraphId !== id)
+      onHighlightsChange(updatedHighlights)
+      
+      // Clear active highlight if it was in this paragraph
+      if (activeHighlight) {
+        const activeHighlightObj = highlights.find(h => h.id === activeHighlight)
+        if (activeHighlightObj && activeHighlightObj.paragraphId === id) {
+          onHighlightClick(null)
+        }
+      }
+      
+      // Clear analysis tracking for this paragraph since content changed
+      delete lastAnalyzedContent.current[id]
+    })
+  }, [paragraphs, highlights, activeHighlight, onHighlightsChange, onHighlightClick, localActiveParagraph, analyzeChangedParagraph])
+
+  const handleParagraphCreate = useCallback((id: string) => {
+    // Don't change active paragraph if the current one is being analyzed
+    // This preserves the loading state in the sidebar
+    if (!analyzingParagraphs.has(localActiveParagraph || '')) {
+      setLocalActiveParagraph(id)
+    }
+    // If analysis is running, let it complete before switching paragraphs
+  }, [analyzingParagraphs, localActiveParagraph])
+
+  const handleParagraphDelete = useCallback((id: string) => {
+    // Clean up any ongoing analysis for this paragraph
     if (analysisAbortControllers.current[id]) {
       analysisAbortControllers.current[id].abort()
       delete analysisAbortControllers.current[id]
     }
     
-    // Clear the analysis tracking for this paragraph since content changed
+    // Clear analysis tracking
     delete lastAnalyzedContent.current[id]
     
-    // Remove highlights for this paragraph immediately since the text has changed
+    // Remove highlights for this paragraph
     const updatedHighlights = highlights.filter(h => h.paragraphId !== id)
     onHighlightsChange(updatedHighlights)
     
@@ -189,38 +243,11 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
         onHighlightClick(null)
       }
     }
-  }
+  }, [highlights, activeHighlight, onHighlightsChange, onHighlightClick])
 
-  const handleEnter = (id: string) => {
-    const currentIndex = paragraphs.findIndex(p => p.id === id)
-    const currentParagraph = paragraphs[currentIndex]
-    
-    // Force analysis of the current paragraph when Enter is pressed
-    if (currentParagraph && currentParagraph.content.trim()) {
-      analyzeChangedParagraph(id)
-    }
-    
-    const newId = Date.now().toString()
-    const newParagraphs = [...paragraphs]
-    newParagraphs.splice(currentIndex + 1, 0, { id: newId, content: '' })
-    setParagraphs(newParagraphs)
-    
-    setTimeout(() => {
-      setLocalActiveParagraph(newId)
-    }, 0)
-  }
-
-  const handleDelete = (id: string) => {
-    if (paragraphs.length > 1) {
-      const currentIndex = paragraphs.findIndex(p => p.id === id)
-      const newParagraphs = paragraphs.filter(p => p.id !== id)
-      setParagraphs(newParagraphs)
-      
-      if (currentIndex > 0) {
-        setLocalActiveParagraph(newParagraphs[currentIndex - 1].id)
-      }
-    }
-  }
+  const handleParagraphFocus = useCallback((id: string) => {
+    setLocalActiveParagraph(id)
+  }, [])
 
   return (
     <div className="h-full flex flex-col">
@@ -235,30 +262,18 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       </Header>
       
       {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div 
-            ref={editorRef} 
-            className="editor-paper rounded-lg p-8 min-h-[800px] shadow-2xl space-y-2"
-          >
-            {paragraphs.map((paragraph, index) => (
-              <Paragraph
-                key={paragraph.id}
-                id={paragraph.id}
-                content={paragraph.content}
-                isActive={localActiveParagraph === paragraph.id}
-                onChange={handleParagraphChange}
-                onEnter={handleEnter}
-                onDelete={handleDelete}
-                onFocus={() => setLocalActiveParagraph(paragraph.id)}
-                highlights={highlights.filter(h => h.paragraphId === paragraph.id)}
-                activeHighlight={activeHighlight}
-                onHighlightClick={onHighlightClick}
-                isFirstParagraph={index === 0}
-              />
-            ))}
-          </div>
-        </div>
+      <div className="flex-1 overflow-y-auto">
+        <TipTapEditor
+          initialContent={paragraphs}
+          onParagraphCreate={handleParagraphCreate}
+          onParagraphDelete={handleParagraphDelete}
+          onParagraphFocus={handleParagraphFocus}
+          onContentChange={handleContentChange}
+          highlights={highlights}
+          activeHighlight={activeHighlight}
+          onHighlightClick={onHighlightClick}
+          activeParagraph={localActiveParagraph}
+        />
       </div>
       
       <SettingsModal 

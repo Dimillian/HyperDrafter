@@ -91,8 +91,9 @@ export function HighlightCard({
   return (
     <div
       className={`
-        bg-[hsl(var(--paper-border))]/20 border border-[hsl(var(--paper-border))]/40 rounded-lg p-4 cursor-pointer transition-all duration-200
+        bg-[hsl(var(--paper-border))]/20 border border-[hsl(var(--paper-border))]/40 rounded-lg p-4 cursor-pointer transition-all duration-300 ease-in-out transform hover:scale-[1.02]
         ${getCategoryStyles()}
+        ${isActive ? 'scale-[1.01]' : 'scale-100'}
       `}
       onClick={handleCardClick}
     >

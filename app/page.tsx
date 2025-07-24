@@ -13,13 +13,23 @@ export default function Home() {
 
   const handleParagraphSelect = (paragraphId: string) => {
     setActiveParagraph(paragraphId)
-    // Focus the paragraph in the editor
-    setTimeout(() => {
-      const paragraphElement = document.querySelector(`[data-paragraph-id="${paragraphId}"]`) as HTMLElement
-      if (paragraphElement) {
-        paragraphElement.focus()
-      }
-    }, 0)
+    // TipTap editor will handle focus management internally
+  }
+
+  const handleHighlightClick = (highlightId: string | null) => {
+    if (!highlightId) {
+      setActiveHighlight(null)
+      return
+    }
+
+    // Find which paragraph this highlight belongs to and open its section in sidebar
+    const highlight = highlights.find(h => h.id === highlightId)
+    if (highlight && highlight.paragraphId !== activeParagraph) {
+      setActiveParagraph(highlight.paragraphId)
+    }
+    
+    // Set the active highlight
+    setActiveHighlight(highlightId)
   }
 
   return (
@@ -28,7 +38,7 @@ export default function Home() {
         <Editor 
           onHighlightsChange={setHighlights}
           activeHighlight={activeHighlight}
-          onHighlightClick={setActiveHighlight}
+          onHighlightClick={handleHighlightClick}
           highlights={highlights}
           onLoadingChange={setAnalyzingParagraphs}
           onActiveParagraphChange={setActiveParagraph}
@@ -39,7 +49,7 @@ export default function Home() {
       <Sidebar 
         highlights={highlights}
         activeHighlight={activeHighlight}
-        onHighlightSelect={setActiveHighlight}
+        onHighlightSelect={handleHighlightClick}
         analyzingParagraphs={analyzingParagraphs}
         activeParagraph={activeParagraph}
         paragraphs={paragraphs}
