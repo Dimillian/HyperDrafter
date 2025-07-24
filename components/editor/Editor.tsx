@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { Paragraph } from './Paragraph'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Header } from '@/components/ui'
+import { SettingsModal } from '@/components/ui/SettingsModal'
+import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 
 interface EditorProps {
   onHighlightsChange: (highlights: any[]) => void
@@ -16,6 +18,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick }
     { id: '1', content: '' }
   ])
   const [activeParagraph, setActiveParagraph] = useState<string>('1')
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
 
   const debouncedContent = useDebounce(paragraphs, 1000)
@@ -74,7 +77,15 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick }
 
   return (
     <div className="h-full bg-dark-secondary flex flex-col">
-      <Header />
+      <Header>
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all duration-200"
+          title="Settings"
+        >
+          <Cog6ToothIcon className="w-5 h-5" />
+        </button>
+      </Header>
       
       {/* Editor Content */}
       <div className="flex-1 overflow-y-auto">
@@ -98,6 +109,11 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick }
           </div>
         </div>
       </div>
+      
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   )
 }

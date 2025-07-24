@@ -6,6 +6,8 @@
 - ✅ Sidebar component for AI feedback display
 - ✅ Cyberpunk theme matching Hyper suite
 - ✅ CLAUDE.md rules file created
+- ✅ Settings modal for Anthropic API key management
+- ✅ Local storage for API credentials
 
 ## In Progress - Two-Stage AI System
 - [ ] Design two-stage AI system: 1) Span identification 2) Detailed analysis
