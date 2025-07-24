@@ -1,91 +1,6 @@
 import { SpanTriageResponse, AnthropicModel, ModelsResponse } from './types'
 import { buildSpanTriagePrompt } from './prompts/span-triage'
 
-// Helper function to try parsing partial JSON and extract valid spans
-export function tryParsePartialSpans(partialContent: string): any[] {
-  try {
-    // Look for the start of spans array
-    const spansStartMatch = partialContent.match(/"spans"\s*:\s*\[/)
-    if (!spansStartMatch) {
-      return []
-    }
-    
-    const spansStartIndex = spansStartMatch.index! + spansStartMatch[0].length
-    const spanContent = partialContent.slice(spansStartIndex)
-    
-    // Try to extract spans even if incomplete
-    const spans: any[] = []
-    let currentPos = 0
-    let braceDepth = 0
-    let currentSpan = ''
-    let inString = false
-    let escaped = false
-    
-    for (let i = 0; i < spanContent.length; i++) {
-      const char = spanContent[i]
-      
-      if (escaped) {
-        currentSpan += char
-        escaped = false
-        continue
-      }
-      
-      if (char === '\\' && inString) {
-        escaped = true
-        currentSpan += char
-        continue
-      }
-      
-      if (char === '"') {
-        inString = !inString
-        currentSpan += char
-        continue
-      }
-      
-      if (inString) {
-        currentSpan += char
-        continue
-      }
-      
-      if (char === '{') {
-        if (braceDepth === 0) {
-          currentSpan = '{'
-        } else {
-          currentSpan += char
-        }
-        braceDepth++
-      } else if (char === '}') {
-        currentSpan += char
-        braceDepth--
-        
-        if (braceDepth === 0) {
-          // Try to parse complete span
-          try {
-            const span = JSON.parse(currentSpan)
-            if (span.text && span.startOffset !== undefined && span.endOffset !== undefined) {
-              spans.push(span)
-            }
-          } catch (e) {
-            // Skip invalid spans
-          }
-          currentSpan = ''
-        }
-      } else if (braceDepth > 0) {
-        currentSpan += char
-      }
-      
-      // Stop if we hit array end
-      if (char === ']' && braceDepth === 0) {
-        break
-      }
-    }
-    
-    return spans
-  } catch (e) {
-    return []
-  }
-}
-
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_MODELS_URL = 'https://api.anthropic.com/v1/models'
 
@@ -128,12 +43,7 @@ export class AnthropicService {
     return data as ModelsResponse
   }
 
-  async identifySpans(
-    paragraphText: string, 
-    fullDocumentContext?: { paragraphs: Array<{ id: string; content: string }>, targetParagraphId: string }, 
-    signal?: AbortSignal,
-    onPartialUpdate?: (partialContent: string) => void
-  ): Promise<SpanTriageResponse> {
+  async identifySpans(paragraphText: string, fullDocumentContext?: { paragraphs: Array<{ id: string; content: string }>, targetParagraphId: string }, signal?: AbortSignal): Promise<SpanTriageResponse> {
     if (!this.apiKey) {
       throw new Error('API key not configured')
     }
@@ -153,7 +63,6 @@ export class AnthropicService {
         model: this.model,
         max_tokens: 1024,
         temperature: 0,
-        stream: true,
         messages: [
           {
             role: 'user',
@@ -168,52 +77,8 @@ export class AnthropicService {
       throw new Error(error.error || `API request failed: ${response.status}`)
     }
 
-    // Handle streaming response
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('No response body')
-    }
-
-    let content = ''
-    const decoder = new TextDecoder()
-
-    try {
-      while (true) {
-        // Check if operation was cancelled
-        if (signal?.aborted) {
-          throw new Error('Analysis cancelled')
-        }
-
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') break
-
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                content += parsed.delta.text
-                
-                // Call partial update callback with current content
-                if (onPartialUpdate) {
-                  onPartialUpdate(content)
-                }
-              }
-            } catch (e) {
-              // Skip malformed JSON
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock()
-    }
+    const data = await response.json()
+    const content = data.content[0].text
 
     try {
       // Clean the content before parsing
@@ -255,27 +120,36 @@ export class AnthropicService {
         .replace(/"/g, '"') // Fix smart quotes
         .replace(/"/g, '"') // Fix smart quotes
       
+      console.log('AI Response for text:', paragraphText)
+      console.log('Raw content:', content)
+      console.log('Extracted JSON:', cleanContent)
+      
       const parsed = JSON.parse(cleanContent)
+      console.log('Parsed spans:', parsed.spans)
       
       // Validate and filter spans
       const validSpans = parsed.spans?.filter((span: any) => {
         // Check if span has required properties
         if (!span.text || span.startOffset === undefined || span.endOffset === undefined) {
+          console.warn('Invalid span missing required properties:', span)
           return false
         }
         
         // Check if offsets are valid numbers
         if (typeof span.startOffset !== 'number' || typeof span.endOffset !== 'number') {
+          console.warn('Invalid span offsets (not numbers):', span)
           return false
         }
         
         // Check if offsets are within text bounds
         if (span.startOffset < 0 || span.endOffset > paragraphText.length) {
+          console.warn('Span offsets out of bounds:', span, 'Text length:', paragraphText.length)
           return false
         }
         
         // Check if start is before end
         if (span.startOffset >= span.endOffset) {
+          console.warn('Invalid span: start >= end:', span)
           return false
         }
         
@@ -297,6 +171,7 @@ export class AnthropicService {
                 foundMatch = true
                 correctedStart = testStart
                 correctedEnd = testEnd
+                console.log('Auto-corrected offsets for:', JSON.stringify(span.text), { original: [span.startOffset, span.endOffset], corrected: [testStart, testEnd] })
                 // Update the span with corrected offsets
                 span.startOffset = correctedStart
                 span.endOffset = correctedEnd
@@ -305,6 +180,8 @@ export class AnthropicService {
           }
           
           if (!foundMatch) {
+            console.warn('Span text mismatch. Expected:', JSON.stringify(extractedText), 'Got:', JSON.stringify(span.text))
+            console.warn('Could not find fuzzy match within ±5 character range')
             return false
           }
         }
@@ -313,8 +190,10 @@ export class AnthropicService {
         return true
       }) || []
       
+      console.log('Valid spans after filtering:', validSpans)
       return { spans: validSpans } as SpanTriageResponse
     } catch (e) {
+      console.error('Failed to parse AI response:', e)
       return { spans: [] }
     }
   }
