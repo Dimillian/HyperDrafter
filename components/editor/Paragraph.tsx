@@ -98,13 +98,6 @@ export function Paragraph({
     
     // Check if highlights have changed
     const highlightsChanged = JSON.stringify(prevHighlightsRef.current) !== JSON.stringify(highlights)
-    if (highlightsChanged) {
-      console.log(`[PARAGRAPH ${id}] Highlights changed:`, {
-        oldCount: prevHighlightsRef.current.length,
-        newCount: highlights.length,
-        highlights: highlights.map(h => ({ id: h.id, type: h.type, text: h.text }))
-      })
-    }
     prevHighlightsRef.current = highlights
     
     // Prevent update if user is actively typing UNLESS highlights have changed
@@ -146,18 +139,6 @@ export function Paragraph({
           console.warn('Highlight extracts empty text:', highlight)
           return false
         }
-        
-        // Simple validation - just check if extracted text is not empty
-        // More complex validation was causing valid highlights to be filtered out
-        console.log('Highlight validation:', {
-          paragraphId: id,
-          highlightId: highlight.id,
-          extractedText: `"${extractedText}"`,
-          expectedText: `"${highlight.fullText || highlight.text}"`,
-          startIndex: highlight.startIndex,
-          endIndex: highlight.endIndex,
-          contentLength: content.length
-        })
         
         return true
       })
@@ -238,14 +219,6 @@ export function Paragraph({
         h.startIndex >= 0 && h.endIndex <= content.length && h.startIndex < h.endIndex
       ).length : 0
       
-      console.log(`[PARAGRAPH ${id}] Updating HTML with highlights:`, {
-        highlightCount: highlights.length,
-        validHighlightCount: validCount,
-        contentLength: content.length,
-        hasActiveHighlight: !!activeHighlight,
-        highlightsChanged: highlightsChanged,
-        isUserTyping: isUserTyping
-      })
       
       editorRef.current.innerHTML = htmlContent
       setLastRenderedContent(content)

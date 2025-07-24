@@ -56,14 +56,12 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
 
     // Skip analysis if content hasn't changed since last analysis
     if (lastAnalyzedContent.current[paragraphId] === paragraph.content) {
-      console.log(`Skipping duplicate analysis for paragraph ${paragraphId}`)
       return
     }
 
     // Cancel any ongoing analysis for this paragraph
     if (analysisAbortControllers.current[paragraphId]) {
       analysisAbortControllers.current[paragraphId].abort()
-      console.log(`Cancelled ongoing analysis for paragraph ${paragraphId}`)
     }
 
     // Create new abort controller for this analysis
@@ -94,7 +92,6 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       // Check if the paragraph content has changed since analysis started
       const currentParagraph = paragraphs.find(p => p.id === paragraphId)
       if (!currentParagraph || currentParagraph.content !== analysisContent) {
-        console.log('Paragraph content changed during analysis - discarding highlights')
         return
       }
       
@@ -122,10 +119,8 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log(`Analysis cancelled for paragraph ${paragraphId}`)
         return // Don't log as error, this is expected
       }
-      console.error(`Failed to analyze paragraph ${paragraphId}:`, error)
     } finally {
       // Clean up abort controller
       if (analysisAbortControllers.current[paragraphId] === abortController) {
@@ -178,7 +173,6 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     if (analysisAbortControllers.current[id]) {
       analysisAbortControllers.current[id].abort()
       delete analysisAbortControllers.current[id]
-      console.log(`Cancelled analysis due to content change in paragraph ${id}`)
     }
     
     // Clear the analysis tracking for this paragraph since content changed
@@ -201,8 +195,8 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     const currentIndex = paragraphs.findIndex(p => p.id === id)
     const currentParagraph = paragraphs[currentIndex]
     
-    // Immediately analyze the current paragraph if it has content
-    if (currentParagraph.content.trim()) {
+    // Force analysis of the current paragraph when Enter is pressed
+    if (currentParagraph && currentParagraph.content.trim()) {
       analyzeChangedParagraph(id)
     }
     
