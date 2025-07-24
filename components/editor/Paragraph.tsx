@@ -182,16 +182,20 @@ export function Paragraph({
             const highlightText = content.slice(highlight.startIndex, highlight.endIndex)
             const isActive = activeHighlight === highlight.id
             
-            const priorityColors: Record<string, string> = {
-              high: isActive ? 'bg-red-500/40 border-b-2 border-red-400' : 'bg-red-500/20 border-b-2 border-red-500/60 hover:bg-red-500/30',
-              medium: isActive ? 'bg-purple-500/40 border-b-2 border-purple-400' : 'bg-purple-500/20 border-b-2 border-purple-500/60 hover:bg-purple-500/30',
-              low: isActive ? 'bg-gray-500/40 border-b-2 border-gray-400' : 'bg-gray-500/20 border-b-2 border-gray-500/60 hover:bg-gray-500/30'
+            const categoryColors: Record<string, string> = {
+              expansion: isActive ? 'bg-green-500/40 border-b-2 border-green-400' : 'bg-green-500/20 border-b-2 border-green-500/60 hover:bg-green-500/30',
+              structure: isActive ? 'bg-blue-500/40 border-b-2 border-blue-400' : 'bg-blue-500/20 border-b-2 border-blue-500/60 hover:bg-blue-500/30',
+              factual: isActive ? 'bg-red-500/40 border-b-2 border-red-400' : 'bg-red-500/20 border-b-2 border-red-500/60 hover:bg-red-500/30',
+              logic: isActive ? 'bg-orange-500/40 border-b-2 border-orange-400' : 'bg-orange-500/20 border-b-2 border-orange-500/60 hover:bg-orange-500/30',
+              clarity: isActive ? 'bg-purple-500/40 border-b-2 border-purple-400' : 'bg-purple-500/20 border-b-2 border-purple-500/60 hover:bg-purple-500/30',
+              evidence: isActive ? 'bg-yellow-500/40 border-b-2 border-yellow-400' : 'bg-yellow-500/20 border-b-2 border-yellow-500/60 hover:bg-yellow-500/30',
+              basic: isActive ? 'bg-gray-500/40 border-b-2 border-gray-400' : 'bg-gray-500/20 border-b-2 border-gray-500/60 hover:bg-gray-500/30'
             }
             
             htmlContent += `<span 
-              class="highlight cursor-pointer transition-colors duration-200 ${priorityColors[highlight.priority] || 'bg-gray-500/20 border-b-2 border-gray-500/60'}" 
+              class="highlight cursor-pointer transition-colors duration-200 ${categoryColors[highlight.type] || 'bg-gray-500/20 border-b-2 border-gray-500/60'}" 
               data-highlight-id="${highlight.id}"
-              title="${highlight.priority} priority ${highlight.type}: ${highlight.note}"
+              title="${highlight.type} (${highlight.priority} priority): ${highlight.note}"
             >${highlightText.replace(/\n/g, '<br>')}</span>`
             
             lastIndex = highlight.endIndex
@@ -273,7 +277,7 @@ export function Paragraph({
             : 'py-1 min-h-[1.5rem] text-base leading-normal'
           }
           ${isActive 
-            ? 'border-purple-500 pl-6 bg-purple-50/30 dark:bg-purple-900/10' 
+            ? 'border-purple-500 pl-6' 
             : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
           }
         `}

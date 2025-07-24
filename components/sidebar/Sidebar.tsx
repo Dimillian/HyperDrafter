@@ -39,7 +39,7 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
 
   return (
     <aside className="w-80 bg-[hsl(var(--paper))] border-l border-[hsl(var(--paper-border))] h-full overflow-hidden flex flex-col">
-      <div className="px-4 py-4 border-b border-[hsl(var(--paper-border))] h-[73px] flex items-center">
+      <div className="px-4 py-4 border-b border-[hsl(var(--paper-border))] h-[69px] flex items-center">
         <p className="text-sm text-[hsl(var(--paper-foreground))] opacity-70">
           {highlights.length} suggestion{highlights.length !== 1 ? 's' : ''}
         </p>
@@ -63,16 +63,40 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
             const analyzingParagraph = analyzingParagraphs.find(p => p.id === paragraphId)
             const currentParagraph = paragraphs.find(p => p.id === paragraphId)
             
-            // Get priority counts
-            const priorityCounts = paragraphHighlights.reduce((acc: any, h: any) => {
-              acc[h.priority] = (acc[h.priority] || 0) + 1
+            // Get category counts and determine highest priority category
+            const categoryCounts = paragraphHighlights.reduce((acc: any, h: any) => {
+              acc[h.type] = (acc[h.type] || 0) + 1
               return acc
             }, {})
 
-            const highCount = priorityCounts.high || 0
-            const mediumCount = priorityCounts.medium || 0
-            const lowCount = priorityCounts.low || 0
             const totalCount = paragraphHighlights.length
+            
+            // Determine the most important category for the indicator color
+            const getHighestPriorityCategory = () => {
+              if (categoryCounts.factual > 0) return 'factual'
+              if (categoryCounts.logic > 0) return 'logic'
+              if (categoryCounts.structure > 0) return 'structure'
+              if (categoryCounts.expansion > 0) return 'expansion'
+              if (categoryCounts.clarity > 0) return 'clarity'
+              if (categoryCounts.evidence > 0) return 'evidence'
+              if (categoryCounts.basic > 0) return 'basic'
+              return null
+            }
+            
+            const highestCategory = getHighestPriorityCategory()
+            
+            const getCategoryIndicatorColor = (category: string | null) => {
+              switch (category) {
+                case 'expansion': return 'bg-green-500'
+                case 'structure': return 'bg-blue-500'
+                case 'factual': return 'bg-red-500'
+                case 'logic': return 'bg-orange-500'
+                case 'clarity': return 'bg-purple-500'
+                case 'evidence': return 'bg-yellow-500'
+                case 'basic': return 'bg-gray-500'
+                default: return 'bg-[hsl(var(--paper-foreground))]/30'
+              }
+            }
 
             return (
               <div key={paragraphId} className="space-y-1">
@@ -93,11 +117,7 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
                     ${isAnalyzing 
                       ? 'bg-purple-500 animate-pulse' 
                       : totalCount > 0 
-                        ? highCount > 0 
-                          ? 'bg-red-500' 
-                          : mediumCount > 0 
-                            ? 'bg-purple-500' 
-                            : 'bg-gray-500'
+                        ? getCategoryIndicatorColor(highestCategory)
                         : 'bg-[hsl(var(--paper-foreground))]/30'
                     }
                   `} />
@@ -116,9 +136,13 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
                         {getFirstThreeWords(currentParagraph?.content || '', paragraphId)}
                         {totalCount > 0 && (
                           <span className="ml-2 text-[hsl(var(--paper-foreground))]/50">
-                            {highCount > 0 && <span className="text-red-500">●{highCount}</span>}
-                            {mediumCount > 0 && <span className="text-purple-500 ml-1">●{mediumCount}</span>}
-                            {lowCount > 0 && <span className="text-[hsl(var(--paper-foreground))]/50 ml-1">●{lowCount}</span>}
+                            {categoryCounts.factual > 0 && <span className="text-red-400">●{categoryCounts.factual}</span>}
+                            {categoryCounts.logic > 0 && <span className="text-orange-400 ml-1">●{categoryCounts.logic}</span>}
+                            {categoryCounts.structure > 0 && <span className="text-blue-400 ml-1">●{categoryCounts.structure}</span>}
+                            {categoryCounts.expansion > 0 && <span className="text-green-400 ml-1">●{categoryCounts.expansion}</span>}
+                            {categoryCounts.clarity > 0 && <span className="text-purple-400 ml-1">●{categoryCounts.clarity}</span>}
+                            {categoryCounts.evidence > 0 && <span className="text-yellow-400 ml-1">●{categoryCounts.evidence}</span>}
+                            {categoryCounts.basic > 0 && <span className="text-gray-400 ml-1">●{categoryCounts.basic}</span>}
                           </span>
                         )}
                       </span>
@@ -131,8 +155,10 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
                   <div className="ml-5 space-y-2 border-l-2 border-purple-500/30 pl-3">
                     {paragraphHighlights
                       .sort((a: any, b: any) => {
-                        const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
-                        return priorityOrder[a.priority] - priorityOrder[b.priority]
+                        const categoryOrder: Record<string, number> = { 
+                          factual: 0, logic: 1, structure: 2, expansion: 3, clarity: 4, evidence: 5, basic: 6 
+                        }
+                        return (categoryOrder[a.type] || 6) - (categoryOrder[b.type] || 6)
                       })
                       .map((highlight) => (
                         <HighlightCard

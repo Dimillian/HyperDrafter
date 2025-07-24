@@ -38,28 +38,53 @@ export function HighlightCard({
 
   const shouldShowDetails = isExpanded || isActive
   
-  const getPriorityStyles = () => {
-    switch (highlight.priority) {
-      case 'high':
+  const getCategoryStyles = () => {
+    switch (highlight.type) {
+      case 'expansion':
         return isActive 
+          ? 'ring-2 ring-green-500 shadow-lg shadow-green-500/20 bg-green-500/10'
+          : 'hover:ring-1 hover:ring-green-500/50 hover:bg-green-500/5 border-l-4 border-green-500/60'
+      case 'structure':
+        return isActive
+          ? 'ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 bg-blue-500/10'
+          : 'hover:ring-1 hover:ring-blue-500/50 hover:bg-blue-500/5 border-l-4 border-blue-500/60'
+      case 'factual':
+        return isActive
           ? 'ring-2 ring-red-500 shadow-lg shadow-red-500/20 bg-red-500/10'
           : 'hover:ring-1 hover:ring-red-500/50 hover:bg-red-500/5 border-l-4 border-red-500/60'
-      case 'medium':
+      case 'logic':
+        return isActive
+          ? 'ring-2 ring-orange-500 shadow-lg shadow-orange-500/20 bg-orange-500/10'
+          : 'hover:ring-1 hover:ring-orange-500/50 hover:bg-orange-500/5 border-l-4 border-orange-500/60'
+      case 'clarity':
         return isActive
           ? 'ring-2 ring-purple-500 shadow-lg shadow-purple-500/20 bg-purple-500/10'
           : 'hover:ring-1 hover:ring-purple-500/50 hover:bg-purple-500/5 border-l-4 border-purple-500/60'
-      case 'low':
+      case 'evidence':
+        return isActive
+          ? 'ring-2 ring-yellow-500 shadow-lg shadow-yellow-500/20 bg-yellow-500/10'
+          : 'hover:ring-1 hover:ring-yellow-500/50 hover:bg-yellow-500/5 border-l-4 border-yellow-500/60'
+      case 'basic':
+        return isActive
+          ? 'ring-2 ring-gray-500 shadow-lg shadow-gray-500/20 bg-gray-500/10'
+          : 'hover:ring-1 hover:ring-gray-500/50 hover:bg-gray-500/5 border-l-4 border-gray-500/60'
+      default:
         return isActive
           ? 'ring-2 ring-gray-500 shadow-lg shadow-gray-500/20 bg-gray-500/10'
           : 'hover:ring-1 hover:ring-gray-500/50 hover:bg-gray-500/5 border-l-4 border-gray-500/60'
     }
   }
 
-  const getPriorityColor = () => {
-    switch (highlight.priority) {
-      case 'high': return 'text-red-400'
-      case 'medium': return 'text-purple-400'
-      case 'low': return 'text-gray-400'
+  const getCategoryColor = () => {
+    switch (highlight.type) {
+      case 'expansion': return 'text-green-400'
+      case 'structure': return 'text-blue-400'
+      case 'factual': return 'text-red-400'
+      case 'logic': return 'text-orange-400'
+      case 'clarity': return 'text-purple-400'
+      case 'evidence': return 'text-yellow-400'
+      case 'basic': return 'text-gray-400'
+      default: return 'text-gray-400'
     }
   }
 
@@ -67,7 +92,7 @@ export function HighlightCard({
     <div
       className={`
         bg-[hsl(var(--paper-border))]/20 border border-[hsl(var(--paper-border))]/40 rounded-lg p-4 cursor-pointer transition-all duration-200
-        ${getPriorityStyles()}
+        ${getCategoryStyles()}
       `}
       onClick={handleCardClick}
     >
@@ -77,11 +102,8 @@ export function HighlightCard({
             "{highlight.text}..."
           </p>
           <div className="flex items-center gap-2">
-            <span className={`text-xs uppercase tracking-wide ${getPriorityColor()}`}>
+            <span className={`text-xs uppercase tracking-wide ${getCategoryColor()}`}>
               {highlight.type}
-            </span>
-            <span className={`text-xs font-medium ${getPriorityColor()}`}>
-              {highlight.priority} priority
             </span>
             {highlight.confidence && (
               <span className="text-xs text-[hsl(var(--paper-foreground))]/50">
