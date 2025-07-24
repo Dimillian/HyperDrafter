@@ -1,76 +1,100 @@
 # HyperDrafter 🚀
 
-A collaborative AI-powered editor that provides live feedback as you write. HyperDrafter enhances your writing experience with intelligent highlights, suggestions, and real-time assistance.
+A sophisticated AI-powered writing editor that provides intelligent feedback as you write. Built with a focus on seamless text editing and contextual AI assistance.
 
-## Overview
+## ✨ Key Features
 
-HyperDrafter is a modern text editor that combines the simplicity of traditional writing tools with the power of AI assistance. As you type, the AI analyzes your content and provides contextual feedback through highlights and sidebar notes.
+- **📝 Paper-Like Editor**: Typewriter font with elegant paper styling and dark/light themes
+- **🤖 Intelligent AI Analysis**: Real-time feedback with category-based highlighting system
+- **🎯 Contextual Highlights**: Seven feedback categories (expansion, structure, factual, logic, clarity, evidence, basic) with distinct colors
+- **📊 Smart Sidebar**: Compact paragraph indicators showing first 3 words with expandable detailed feedback
+- **🔄 Document Context**: AI analyzes each paragraph within full document context for better suggestions
+- **⚡ Stable Architecture**: Robust contentEditable implementation preventing cursor jumping and text corruption
 
-### Key Features
+## 🎨 Design Philosophy
 
-- **Live AI Feedback**: Get real-time suggestions and corrections as you write
-- **Smart Highlights**: AI highlights questions, grammar issues, and areas for expansion
-- **Interactive Sidebar**: Click on highlights to see detailed notes and suggestions
-- **Paragraph-based Editing**: Clean, distraction-free writing with automatic paragraph creation
-- **Real-time Collaboration**: Seamless interaction between human creativity and AI assistance
+HyperDrafter follows the Hyper suite's cyberpunk design language:
+- **Typography**: Courier Prime typewriter font family
+- **Colors**: Category-based system (green=expansion, blue=structure, red=factual, orange=logic, purple=clarity, yellow=evidence, gray=basic)
+- **Themes**: Seamless dark/light mode with paper metaphor
+- **Interactions**: Smooth transitions with glass morphism effects
 
-## How It Works
-
-1. **Write**: Start typing in the clean, minimal editor interface
-2. **Pause**: When you stop typing, the AI analyzes your text
-3. **Review**: See highlights appear on relevant portions of your text
-4. **Interact**: Click highlights to view AI suggestions in the sidebar
-5. **Refine**: Query the AI, edit suggestions, or mark feedback as resolved
-
-## Tech Stack
-
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS with custom cyberpunk theme
-- **UI Components**: React 19
-- **Icons**: Lucide React
-- **AI Integration**: Real-time text analysis and feedback system
-
-## Getting Started
+## 🚀 Getting Started
 
 ```bash
 # Install dependencies
 npm install
 
-# Run development server
+# Start development server  
 npm run dev
 
 # Build for production
 npm run build
+
+# Run type checking
+npm run typecheck
 ```
 
-## Project Structure
+## 🏗️ Architecture
+
+### Editor Core
+- **Paragraph-based**: Each paragraph is independently editable with AI analysis
+- **Real-time Feedback**: 1-second debounced analysis after typing stops
+- **Highlight System**: Character-offset based highlighting with overlap resolution
+- **Theme Management**: React context with localStorage persistence
+
+### AI Integration
+- **Two-stage Analysis**: Efficient span identification followed by detailed feedback
+- **Document Context**: Full document awareness for contextual paragraph analysis
+- **Category System**: Seven distinct feedback types with priority ordering
+- **Robust Parsing**: Handles AI responses with extra text and JSON formatting
+
+## 📁 Project Structure
 
 ```
 HyperDrafter/
-├── app/              # Next.js app router pages
-├── components/       # React components
-│   ├── editor/      # Editor-specific components
-│   ├── sidebar/     # Sidebar and notes components
-│   └── ui/          # Shared UI components
-├── lib/             # Utilities and helpers
-├── hooks/           # Custom React hooks
-├── types/           # TypeScript type definitions
-└── public/          # Static assets
+├── components/
+│   ├── editor/          # Core editing components
+│   │   ├── Editor.tsx   # Main editor orchestration
+│   │   └── Paragraph.tsx # Individual paragraph editing
+│   ├── sidebar/         # AI feedback interface
+│   │   ├── Sidebar.tsx  # Main sidebar with paragraph indicators
+│   │   └── HighlightCard.tsx # Individual feedback cards
+│   └── ui/              # Shared UI components
+├── lib/ai/              # AI integration layer
+│   ├── anthropic.ts     # Anthropic API service
+│   └── prompts/         # AI prompts and templates
+├── contexts/            # React contexts (theme, etc.)
+└── hooks/               # Custom React hooks
 ```
 
-## Design Philosophy
+## 🎯 Current Status
 
-HyperDrafter follows a cyberpunk-inspired design language with:
-- Dark backgrounds with neon purple accents
-- Glass morphism effects for UI elements
-- Smooth transitions and hover states
-- Minimal, distraction-free writing interface
+HyperDrafter has a **stable core** with:
+- ✅ Robust text editing without cursor issues
+- ✅ Real-time AI analysis with category-based highlights  
+- ✅ Modern paper-like UI with theme switching
+- ✅ Interactive sidebar with paragraph navigation
+- ✅ Document-context aware AI feedback
 
-## Contributing
+## 🔮 Next Steps
 
-Part of the Hyper suite of tools, including HyperYapper and HyperGit. Maintains consistent design patterns and tech stack across all projects.
+- **Draft Management**: Auto-save and document persistence
+- **Export System**: Markdown, TXT, and HTML export
+- **Enhanced Paragraph Types**: Titles, lists, and formatting
+- **Keyboard Navigation**: Streamlined highlight traversal
 
-## License
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript 5.8+
+- **Styling**: Tailwind CSS 3.4+ with custom design system
+- **UI**: React 19 with custom hooks and contexts
+- **AI**: Anthropic Claude integration with intelligent prompting
+- **Storage**: LocalStorage for settings and draft persistence
+
+Part of the **Hyper suite** maintaining consistent design and architecture patterns.
+
+## 📄 License
 
 MIT
