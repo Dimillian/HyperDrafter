@@ -169,7 +169,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               ) : availableModels.length > 0 ? (
                 <select
                   value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
+                  onChange={(e) => {
+                    const newModel = e.target.value
+                    setSelectedModel(newModel)
+                    localStorage.setItem('anthropic_model', newModel)
+                    setIsSaved(true)
+                    setTimeout(() => setIsSaved(false), 2000)
+                  }}
                   className="w-full px-4 py-3 bg-black/50 border border-purple-500/30 rounded-lg focus:outline-none focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-200 text-white"
                 >
                   {availableModels.map((model) => (
@@ -181,7 +187,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               ) : (
                 <select
                   value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
+                  onChange={(e) => {
+                    const newModel = e.target.value
+                    setSelectedModel(newModel)
+                    localStorage.setItem('anthropic_model', newModel)
+                    setIsSaved(true)
+                    setTimeout(() => setIsSaved(false), 2000)
+                  }}
                   className="w-full px-4 py-3 bg-black/50 border border-purple-500/30 rounded-lg focus:outline-none focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-200 text-white"
                 >
                   <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
