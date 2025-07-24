@@ -2,7 +2,8 @@ export interface SpanIdentification {
   text: string
   startOffset: number
   endOffset: number
-  type: 'grammar' | 'clarity' | 'style' | 'structure' | 'factual' | 'tone'
+  type: 'expansion' | 'structure' | 'factual' | 'clarity' | 'logic' | 'evidence' | 'basic'
+  priority: 'high' | 'medium' | 'low'
   confidence: number
   reasoning: string
 }

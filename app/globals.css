@@ -51,6 +51,13 @@
   }
 }
 
+/* ContentEditable placeholder */
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: rgb(75 85 99); /* text-gray-600 */
+  pointer-events: none;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

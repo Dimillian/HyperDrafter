@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Paragraph } from './Paragraph'
-import { useDebounce } from '@/hooks/useDebounce'
+import { useParagraphDebounce } from '@/hooks/useParagraphDebounce'
 import { Header } from '@/components/ui'
 import { SettingsModal } from '@/components/ui/SettingsModal'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
@@ -12,68 +12,107 @@ import { SpanIdentification } from '@/lib/ai/types'
 interface EditorProps {
   onHighlightsChange: (highlights: any[]) => void
   activeHighlight: string | null
-  onHighlightClick: (id: string) => void
+  onHighlightClick: (id: string | null) => void
   highlights: any[]
+  onLoadingChange: (loadingParagraphs: string[]) => void
 }
 
-export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, highlights }: EditorProps) {
+export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, highlights, onLoadingChange }: EditorProps) {
   const [paragraphs, setParagraphs] = useState<Array<{ id: string; content: string }>>([
     { id: '1', content: '' }
   ])
   const [activeParagraph, setActiveParagraph] = useState<string>('1')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [analyzingParagraphs, setAnalyzingParagraphs] = useState<Set<string>>(new Set())
   const editorRef = useRef<HTMLDivElement>(null)
 
-  const debouncedContent = useDebounce(paragraphs, 1000)
-
-  useEffect(() => {
-    if (debouncedContent.some(p => p.content.trim())) {
-      analyzeContent()
+  const analyzeChangedParagraph = useCallback(async (paragraphId: string) => {
+    const paragraph = paragraphs.find(p => p.id === paragraphId)
+    if (!paragraph || !paragraph.content.trim()) {
+      // Remove highlights for empty paragraphs
+      const updatedHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
+      onHighlightsChange(updatedHighlights)
+      return
     }
-  }, [debouncedContent])
 
-  const analyzeContent = async () => {
     // Update service credentials in case they changed
     anthropicService.updateCredentials()
     
-    const allHighlights: any[] = []
+    // Add paragraph to analyzing set
+    setAnalyzingParagraphs(prev => {
+      const newSet = new Set([...prev, paragraphId])
+      return newSet
+    })
     
-    // Process each paragraph with content
-    for (const paragraph of paragraphs) {
-      if (!paragraph.content.trim()) continue
+    try {
+      const response = await anthropicService.identifySpans(paragraph.content)
       
-      try {
-        const response = await anthropicService.identifySpans(paragraph.content)
-        
-        // Convert spans to highlights
-        const paragraphHighlights = response.spans.map((span: SpanIdentification, idx: number) => ({
-          id: `highlight-${paragraph.id}-${idx}`,
-          paragraphId: paragraph.id,
-          type: span.type,
-          text: span.text.slice(0, 30) + (span.text.length > 30 ? '...' : ''),
-          startIndex: span.startOffset,
-          endIndex: span.endOffset,
-          note: span.reasoning,
-          confidence: span.confidence
-        }))
-        
-        allHighlights.push(...paragraphHighlights)
-      } catch (error) {
-        console.error(`Failed to analyze paragraph ${paragraph.id}:`, error)
-      }
+      // Convert spans to highlights with offset adjustment
+      // AI consistently provides offsets that are off by +1, so we adjust them
+      const paragraphHighlights = response.spans.map((span: SpanIdentification, idx: number) => ({
+        id: `highlight-${paragraph.id}-${idx}`,
+        paragraphId: paragraph.id,
+        type: span.type,
+        priority: span.priority,
+        text: span.text.slice(0, 30) + (span.text.length > 30 ? '...' : ''),
+        startIndex: Math.max(0, span.startOffset),
+        endIndex: Math.min(paragraph.content.length, span.endOffset),
+        note: span.reasoning,
+        confidence: span.confidence,
+        fullText: span.text
+      }))
+      
+      // Remove old highlights for this paragraph and add new ones
+      const otherHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
+      const updatedHighlights = [...otherHighlights, ...paragraphHighlights]
+      onHighlightsChange(updatedHighlights)
+      
+    } catch (error) {
+      console.error(`Failed to analyze paragraph ${paragraphId}:`, error)
+    } finally {
+      // Remove paragraph from analyzing set
+      setAnalyzingParagraphs(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(paragraphId)
+        return newSet
+      })
     }
-    
-    onHighlightsChange(allHighlights)
-  }
+  }, [paragraphs, highlights, onHighlightsChange])
+
+  // Use per-paragraph debouncing for truly parallel analysis
+  useParagraphDebounce(paragraphs, analyzeChangedParagraph, 1000)
+
+  useEffect(() => {
+    onLoadingChange([...analyzingParagraphs])
+  }, [analyzingParagraphs, onLoadingChange])
 
   const handleParagraphChange = (id: string, content: string) => {
     setParagraphs(prev => prev.map(p => 
       p.id === id ? { ...p, content } : p
     ))
+    
+    // Remove highlights for this paragraph immediately since the text has changed
+    const updatedHighlights = highlights.filter(h => h.paragraphId !== id)
+    onHighlightsChange(updatedHighlights)
+    
+    // Clear active highlight if it was in this paragraph
+    if (activeHighlight) {
+      const activeHighlightObj = highlights.find(h => h.id === activeHighlight)
+      if (activeHighlightObj && activeHighlightObj.paragraphId === id) {
+        onHighlightClick(null)
+      }
+    }
   }
 
   const handleEnter = (id: string) => {
     const currentIndex = paragraphs.findIndex(p => p.id === id)
+    const currentParagraph = paragraphs[currentIndex]
+    
+    // Immediately analyze the current paragraph if it has content
+    if (currentParagraph.content.trim()) {
+      analyzeChangedParagraph(id)
+    }
+    
     const newId = Date.now().toString()
     const newParagraphs = [...paragraphs]
     newParagraphs.splice(currentIndex + 1, 0, { id: newId, content: '' })
