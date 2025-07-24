@@ -262,6 +262,7 @@ export function Paragraph({
         data-gramm="false"
         data-gramm_editor="false"
         data-enable-grammarly="false"
+        data-paragraph-id={id}
         spellCheck="false"
         className={`
           w-full px-4 bg-transparent resize-none overflow-hidden

@@ -66,14 +66,14 @@ export function HighlightCard({
   return (
     <div
       className={`
-        glass rounded-lg p-4 cursor-pointer transition-all duration-200
+        bg-[hsl(var(--paper-border))]/20 border border-[hsl(var(--paper-border))]/40 rounded-lg p-4 cursor-pointer transition-all duration-200
         ${getPriorityStyles()}
       `}
       onClick={handleCardClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-gray-300 mb-1">
+          <p className="text-sm text-[hsl(var(--paper-foreground))]/90 mb-1">
             "{highlight.text}..."
           </p>
           <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export function HighlightCard({
               {highlight.priority} priority
             </span>
             {highlight.confidence && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-[hsl(var(--paper-foreground))]/50">
                 {Math.round(highlight.confidence * 100)}%
               </span>
             )}
@@ -92,7 +92,7 @@ export function HighlightCard({
         </div>
         <button
           onClick={handleToggleClick}
-          className="text-gray-500 hover:text-gray-300 ml-2"
+          className="text-[hsl(var(--paper-foreground))]/50 hover:text-[hsl(var(--paper-foreground))]/80 ml-2"
         >
           {isExpanded ? '−' : '+'}
         </button>
@@ -102,16 +102,16 @@ export function HighlightCard({
         <div className="mt-3 pt-3 border-t border-purple-500/20">
           {highlight.fullText && highlight.fullText !== highlight.text && (
             <div className="mb-3">
-              <p className="text-xs text-gray-500 mb-1">Full text:</p>
-              <p className="text-sm text-gray-300 italic">"{highlight.fullText}"</p>
+              <p className="text-xs text-[hsl(var(--paper-foreground))]/50 mb-1">Full text:</p>
+              <p className="text-sm text-[hsl(var(--paper-foreground))]/80 italic">"{highlight.fullText}"</p>
             </div>
           )}
-          <p className="text-sm text-gray-400 mb-3">{highlight.note}</p>
+          <p className="text-sm text-[hsl(var(--paper-foreground))]/70 mb-3">{highlight.note}</p>
           <div className="flex gap-2">
             <button className="text-xs px-3 py-1 bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition-colors">
               Get Suggestions
             </button>
-            <button className="text-xs px-3 py-1 bg-gray-800 text-gray-400 rounded hover:bg-gray-700 transition-colors">
+            <button className="text-xs px-3 py-1 bg-[hsl(var(--paper-border))]/50 text-[hsl(var(--paper-foreground))]/70 rounded hover:bg-[hsl(var(--paper-border))]/70 transition-colors">
               Dismiss
             </button>
           </div>

@@ -15,13 +15,25 @@ interface EditorProps {
   onHighlightClick: (id: string | null) => void
   highlights: any[]
   onLoadingChange: (loadingParagraphs: Array<{ id: string; content: string }>) => void
+  onActiveParagraphChange: (paragraphId: string | null) => void
+  onParagraphsChange: (paragraphs: Array<{ id: string; content: string }>) => void
+  activeParagraph: string | null
 }
 
-export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, highlights, onLoadingChange }: EditorProps) {
+export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, highlights, onLoadingChange, onActiveParagraphChange, onParagraphsChange, activeParagraph }: EditorProps) {
   const [paragraphs, setParagraphs] = useState<Array<{ id: string; content: string }>>([
     { id: '1', content: '' }
   ])
-  const [activeParagraph, setActiveParagraph] = useState<string>('1')
+  const [localActiveParagraph, setLocalActiveParagraph] = useState<string>('1')
+  const prevActiveParagraphRef = useRef<string | null>(null)
+
+  // Sync external activeParagraph changes with local state
+  useEffect(() => {
+    if (activeParagraph && activeParagraph !== prevActiveParagraphRef.current) {
+      setLocalActiveParagraph(activeParagraph)
+      prevActiveParagraphRef.current = activeParagraph
+    }
+  }, [activeParagraph])
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [analyzingParagraphs, setAnalyzingParagraphs] = useState<Set<string>>(new Set())
   const editorRef = useRef<HTMLDivElement>(null)
@@ -108,6 +120,20 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     onLoadingChange(analyzingParagraphsWithContent)
   }, [analyzingParagraphs, paragraphs, onLoadingChange])
 
+  useEffect(() => {
+    onActiveParagraphChange(localActiveParagraph)
+  }, [localActiveParagraph, onActiveParagraphChange])
+
+  useEffect(() => {
+    onParagraphsChange(paragraphs)
+  }, [paragraphs, onParagraphsChange])
+
+  // Sync external paragraph selection changes
+  useEffect(() => {
+    // When external selection changes, update our local state
+    // This will be triggered when sidebar calls onParagraphSelect
+  }, [])
+
   const handleParagraphChange = (id: string, content: string) => {
     setParagraphs(prev => prev.map(p => 
       p.id === id ? { ...p, content } : p
@@ -141,7 +167,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     setParagraphs(newParagraphs)
     
     setTimeout(() => {
-      setActiveParagraph(newId)
+      setLocalActiveParagraph(newId)
     }, 0)
   }
 
@@ -152,7 +178,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       setParagraphs(newParagraphs)
       
       if (currentIndex > 0) {
-        setActiveParagraph(newParagraphs[currentIndex - 1].id)
+        setLocalActiveParagraph(newParagraphs[currentIndex - 1].id)
       }
     }
   }
@@ -181,11 +207,11 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
                 key={paragraph.id}
                 id={paragraph.id}
                 content={paragraph.content}
-                isActive={activeParagraph === paragraph.id}
+                isActive={localActiveParagraph === paragraph.id}
                 onChange={handleParagraphChange}
                 onEnter={handleEnter}
                 onDelete={handleDelete}
-                onFocus={() => setActiveParagraph(paragraph.id)}
+                onFocus={() => setLocalActiveParagraph(paragraph.id)}
                 highlights={highlights.filter(h => h.paragraphId === paragraph.id)}
                 activeHighlight={activeHighlight}
                 onHighlightClick={onHighlightClick}
