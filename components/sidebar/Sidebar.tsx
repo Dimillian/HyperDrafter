@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HighlightCard } from './HighlightCard'
 
 interface SidebarProps {
@@ -15,6 +15,21 @@ interface SidebarProps {
 
 export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyzingParagraphs, activeParagraph, paragraphs, onParagraphSelect }: SidebarProps) {
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+
+  // Auto-expand single highlights when paragraph is selected
+  useEffect(() => {
+    if (activeParagraph) {
+      const paragraphHighlights = highlights.filter(h => h.paragraphId === activeParagraph)
+      if (paragraphHighlights.length === 1) {
+        const highlightId = paragraphHighlights[0].id
+        setExpandedNotes(prev => {
+          const newSet = new Set(prev)
+          newSet.add(highlightId)
+          return newSet
+        })
+      }
+    }
+  }, [activeParagraph, highlights])
 
   const toggleNote = (id: string) => {
     setExpandedNotes(prev => {
@@ -70,6 +85,7 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
             }, {})
 
             const totalCount = paragraphHighlights.length
+            const hasPartialHighlights = paragraphHighlights.some((h: any) => h.isPartial)
             
             // Determine the most important category for the indicator color
             const getHighestPriorityCategory = () => {
@@ -116,9 +132,11 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
                     w-3 h-3 rounded-full flex-shrink-0
                     ${isAnalyzing 
                       ? 'bg-purple-500 animate-pulse' 
-                      : totalCount > 0 
-                        ? getCategoryIndicatorColor(highestCategory)
-                        : 'bg-[hsl(var(--paper-foreground))]/30'
+                      : hasPartialHighlights
+                        ? `${getCategoryIndicatorColor(highestCategory)} animate-pulse`
+                        : totalCount > 0 
+                          ? getCategoryIndicatorColor(highestCategory)
+                          : 'bg-[hsl(var(--paper-foreground))]/30'
                     }
                   `} />
                   
@@ -129,6 +147,25 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
                         <div className="animate-spin rounded-full h-3 w-3 border border-purple-500 border-t-transparent" />
                         <span className="text-xs text-[hsl(var(--paper-foreground))]/70 truncate">
                           {analyzingParagraph.content.trim().slice(0, 40) || 'Empty paragraph'}...
+                        </span>
+                      </div>
+                    ) : hasPartialHighlights ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-pulse rounded-full h-3 w-3 bg-purple-500/50" />
+                        <span className="text-xs text-[hsl(var(--paper-foreground))]/70">
+                          {getFirstThreeWords(currentParagraph?.content || '', paragraphId)}
+                          <span className="ml-2 text-purple-400 animate-pulse">streaming...</span>
+                          {totalCount > 0 && (
+                            <span className="ml-2 text-[hsl(var(--paper-foreground))]/50">
+                              {categoryCounts.factual > 0 && <span className="text-red-400 animate-pulse">●{categoryCounts.factual}</span>}
+                              {categoryCounts.logic > 0 && <span className="text-orange-400 ml-1 animate-pulse">●{categoryCounts.logic}</span>}
+                              {categoryCounts.structure > 0 && <span className="text-blue-400 ml-1 animate-pulse">●{categoryCounts.structure}</span>}
+                              {categoryCounts.expansion > 0 && <span className="text-green-400 ml-1 animate-pulse">●{categoryCounts.expansion}</span>}
+                              {categoryCounts.clarity > 0 && <span className="text-purple-400 ml-1 animate-pulse">●{categoryCounts.clarity}</span>}
+                              {categoryCounts.evidence > 0 && <span className="text-yellow-400 ml-1 animate-pulse">●{categoryCounts.evidence}</span>}
+                              {categoryCounts.basic > 0 && <span className="text-gray-400 ml-1 animate-pulse">●{categoryCounts.basic}</span>}
+                            </span>
+                          )}
                         </span>
                       </div>
                     ) : (

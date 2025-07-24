@@ -93,21 +93,23 @@ export function Paragraph({
   useEffect(() => {
     if (!editorRef.current || isUpdating) return
     
-    // Prevent update if user is actively typing
+    // Prevent update if user is actively typing, BUT allow highlight-only updates
     const isUserTyping = document.activeElement === editorRef.current
-    if (isUserTyping && content !== lastRenderedContent) {
-      // User is typing and content has changed - don't interfere
+    const hasPartialHighlights = highlights.some((h: any) => h.isPartial)
+    
+    if (isUserTyping && content !== lastRenderedContent && !hasPartialHighlights) {
+      // User is typing and content has changed - don't interfere unless we have streaming highlights
       return
     }
     
-    // Only restore cursor position if this paragraph is currently active and not typing
-    const shouldRestoreCursor = isActive && document.activeElement === editorRef.current && !isUserTyping
+    // Only restore cursor position if this paragraph is currently active and not typing and no streaming
+    const shouldRestoreCursor = isActive && document.activeElement === editorRef.current && !isUserTyping && !hasPartialHighlights
     const currentPosition = shouldRestoreCursor ? getCaretPosition(editorRef.current) : 0
     
     // Check if current textContent matches what we expect
     const currentTextContent = editorRef.current.textContent || ''
-    if (currentTextContent !== content) {
-      // Content mismatch - user might be typing, skip update
+    if (currentTextContent !== content && !hasPartialHighlights) {
+      // Content mismatch - user might be typing, skip update unless we have streaming highlights
       return
     }
     
@@ -122,28 +124,17 @@ export function Paragraph({
       const validHighlights = highlights.filter(highlight => {
         // Check bounds
         if (highlight.startIndex < 0 || highlight.endIndex > content.length || highlight.startIndex >= highlight.endIndex) {
-          console.warn('Invalid highlight bounds:', highlight, 'Content length:', content.length)
           return false
         }
         
         // The highlight should extract valid text from content
         const extractedText = content.slice(highlight.startIndex, highlight.endIndex)
         if (!extractedText || extractedText.length === 0) {
-          console.warn('Highlight extracts empty text:', highlight)
           return false
         }
         
         // Simple validation - just check if extracted text is not empty
         // More complex validation was causing valid highlights to be filtered out
-        console.log('Highlight validation:', {
-          paragraphId: id,
-          highlightId: highlight.id,
-          extractedText: `"${extractedText}"`,
-          expectedText: `"${highlight.fullText || highlight.text}"`,
-          startIndex: highlight.startIndex,
-          endIndex: highlight.endIndex,
-          contentLength: content.length
-        })
         
         return true
       })
@@ -220,17 +211,6 @@ export function Paragraph({
     }
     
     if (editorRef.current.innerHTML !== htmlContent) {
-      const validCount = highlights.length > 0 ? highlights.filter(h => 
-        h.startIndex >= 0 && h.endIndex <= content.length && h.startIndex < h.endIndex
-      ).length : 0
-      
-      console.log('Updating paragraph HTML:', {
-        paragraphId: id,
-        highlightCount: highlights.length,
-        validHighlightCount: validCount,
-        contentLength: content.length,
-        hasActiveHighlight: !!activeHighlight
-      })
       
       editorRef.current.innerHTML = htmlContent
       setLastRenderedContent(content)

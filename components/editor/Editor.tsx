@@ -6,7 +6,7 @@ import { useParagraphDebounce } from '@/hooks/useParagraphDebounce'
 import { Header } from '@/components/ui'
 import { SettingsModal } from '@/components/ui/SettingsModal'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
-import { anthropicService } from '@/lib/ai/anthropic'
+import { anthropicService, tryParsePartialSpans } from '@/lib/ai/anthropic'
 import { SpanIdentification } from '@/lib/ai/types'
 
 interface EditorProps {
@@ -56,14 +56,12 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
 
     // Skip analysis if content hasn't changed since last analysis
     if (lastAnalyzedContent.current[paragraphId] === paragraph.content) {
-      console.log(`Skipping duplicate analysis for paragraph ${paragraphId}`)
       return
     }
 
     // Cancel any ongoing analysis for this paragraph
     if (analysisAbortControllers.current[paragraphId]) {
       analysisAbortControllers.current[paragraphId].abort()
-      console.log(`Cancelled ongoing analysis for paragraph ${paragraphId}`)
     }
 
     // Create new abort controller for this analysis
@@ -89,43 +87,97 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
         targetParagraphId: paragraphId
       }
       
-      const response = await anthropicService.identifySpans(analysisContent, fullDocumentContext, abortController.signal)
+      const response = await anthropicService.identifySpans(
+        analysisContent, 
+        fullDocumentContext, 
+        abortController.signal,
+        (partialContent) => {
+          // Handle partial streaming updates
+          const partialSpans = tryParsePartialSpans(partialContent)
+          
+          if (partialSpans.length > 0) {
+            // Create partial highlights from the spans we can parse so far
+            const partialHighlights = partialSpans.map((span: any, idx: number) => ({
+              id: `highlight-${paragraphId}-${idx}`,
+              paragraphId: paragraphId,
+              type: span.type || 'basic',
+              priority: span.priority || 'medium',
+              text: span.text?.slice(0, 30) + (span.text?.length > 30 ? '...' : '') || '',
+              startIndex: Math.max(0, span.startOffset || 0),
+              endIndex: Math.min(analysisContent.length, span.endOffset || 0),
+              note: span.reasoning || 'Streaming analysis...',
+              confidence: span.confidence || 0.5,
+              fullText: span.text || '',
+              isPartial: true // Mark as partial result
+            }))
+            
+            // Update highlights with partial results
+            const otherHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
+            const updatedHighlights = [...otherHighlights, ...partialHighlights]
+            onHighlightsChange(updatedHighlights)
+          }
+        }
+      )
       
       // Check if the paragraph content has changed since analysis started
       const currentParagraph = paragraphs.find(p => p.id === paragraphId)
       if (!currentParagraph || currentParagraph.content !== analysisContent) {
-        console.log('Paragraph content changed during analysis - discarding highlights')
         return
       }
       
-      // Convert spans to highlights with offset adjustment
-      const paragraphHighlights = response.spans.map((span: SpanIdentification, idx: number) => ({
-        id: `highlight-${paragraph.id}-${idx}`,
-        paragraphId: paragraph.id,
-        type: span.type,
-        priority: span.priority,
-        text: span.text.slice(0, 30) + (span.text.length > 30 ? '...' : ''),
-        startIndex: Math.max(0, span.startOffset),
-        endIndex: Math.min(analysisContent.length, span.endOffset),
-        note: span.reasoning,
-        confidence: span.confidence,
-        fullText: span.text
-      }))
+      // Final processing - update partial highlights with complete data from response
+      const finalSpansMap = new Map(response.spans.map((span: SpanIdentification, idx: number) => [
+        `highlight-${paragraph.id}-${idx}`, 
+        span
+      ]))
       
-      // Remove old highlights for this paragraph and add new ones
-      const otherHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
-      const updatedHighlights = [...otherHighlights, ...paragraphHighlights]
-      onHighlightsChange(updatedHighlights)
+      const updatedHighlights = highlights.map(h => {
+        if (h.paragraphId === paragraphId && h.isPartial) {
+          const finalSpan = finalSpansMap.get(h.id)
+          return finalSpan ? {
+            ...h,
+            isPartial: false,
+            note: finalSpan.reasoning,
+            confidence: finalSpan.confidence,
+            type: finalSpan.type,
+            priority: finalSpan.priority
+          } : { ...h, isPartial: false }
+        }
+        return h
+      })
+      
+      // If no partial highlights were created during streaming, create final ones now
+      const hasPartialHighlights = highlights.some(h => h.paragraphId === paragraphId && h.isPartial)
+      if (!hasPartialHighlights) {
+        const paragraphHighlights = response.spans.map((span: SpanIdentification, idx: number) => ({
+          id: `highlight-${paragraph.id}-${idx}`,
+          paragraphId: paragraph.id,
+          type: span.type,
+          priority: span.priority,
+          text: span.text.slice(0, 30) + (span.text.length > 30 ? '...' : ''),
+          startIndex: Math.max(0, span.startOffset),
+          endIndex: Math.min(analysisContent.length, span.endOffset),
+          note: span.reasoning,
+          confidence: span.confidence,
+          fullText: span.text,
+          isPartial: false
+        }))
+        
+        const otherHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
+        const finalHighlights = [...otherHighlights, ...paragraphHighlights]
+        onHighlightsChange(finalHighlights)
+      } else {
+        onHighlightsChange(updatedHighlights)
+      }
       
       // Track that we've analyzed this content
       lastAnalyzedContent.current[paragraphId] = analysisContent
       
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log(`Analysis cancelled for paragraph ${paragraphId}`)
         return // Don't log as error, this is expected
       }
-      console.error(`Failed to analyze paragraph ${paragraphId}:`, error)
+      // Silently handle other errors
     } finally {
       // Clean up abort controller
       if (analysisAbortControllers.current[paragraphId] === abortController) {
@@ -178,7 +230,6 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     if (analysisAbortControllers.current[id]) {
       analysisAbortControllers.current[id].abort()
       delete analysisAbortControllers.current[id]
-      console.log(`Cancelled analysis due to content change in paragraph ${id}`)
     }
     
     // Clear the analysis tracking for this paragraph since content changed

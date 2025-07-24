@@ -14,6 +14,9 @@ export async function POST(request: Request) {
   const body = await request.json()
 
   try {
+    // Check if streaming is requested
+    const isStreaming = body.stream === true
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -30,6 +33,17 @@ export async function POST(request: Request) {
         { error: `Anthropic API error: ${error}` },
         { status: response.status }
       )
+    }
+
+    if (isStreaming) {
+      // For streaming responses, return the stream directly
+      return new Response(response.body, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      })
     }
 
     const data = await response.json()

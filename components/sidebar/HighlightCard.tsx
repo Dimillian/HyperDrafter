@@ -10,6 +10,7 @@ interface Highlight {
   fullText?: string
   note: string
   confidence?: number
+  isPartial?: boolean
 }
 
 interface HighlightCardProps {
@@ -105,7 +106,12 @@ export function HighlightCard({
             <span className={`text-xs uppercase tracking-wide ${getCategoryColor()}`}>
               {highlight.type}
             </span>
-            {highlight.confidence && (
+            {highlight.isPartial && (
+              <span className="text-xs text-purple-400 animate-pulse">
+                streaming...
+              </span>
+            )}
+            {highlight.confidence && !highlight.isPartial && (
               <span className="text-xs text-[hsl(var(--paper-foreground))]/50">
                 {Math.round(highlight.confidence * 100)}%
               </span>
