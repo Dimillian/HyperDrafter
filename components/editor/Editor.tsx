@@ -14,7 +14,7 @@ interface EditorProps {
   activeHighlight: string | null
   onHighlightClick: (id: string | null) => void
   highlights: any[]
-  onLoadingChange: (loadingParagraphs: string[]) => void
+  onLoadingChange: (loadingParagraphs: Array<{ id: string; content: string }>) => void
 }
 
 export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, highlights, onLoadingChange }: EditorProps) {
@@ -98,8 +98,15 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
   useParagraphDebounce(paragraphs, analyzeChangedParagraph, 1000)
 
   useEffect(() => {
-    onLoadingChange([...analyzingParagraphs])
-  }, [analyzingParagraphs, onLoadingChange])
+    const analyzingParagraphsWithContent = [...analyzingParagraphs].map(paragraphId => {
+      const paragraph = paragraphs.find(p => p.id === paragraphId)
+      return {
+        id: paragraphId,
+        content: paragraph?.content || ''
+      }
+    })
+    onLoadingChange(analyzingParagraphsWithContent)
+  }, [analyzingParagraphs, paragraphs, onLoadingChange])
 
   const handleParagraphChange = (id: string, content: string) => {
     setParagraphs(prev => prev.map(p => 
