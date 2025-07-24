@@ -43,7 +43,7 @@ export class AnthropicService {
     return data as ModelsResponse
   }
 
-  async identifySpans(paragraphText: string, fullDocumentContext?: { paragraphs: Array<{ id: string; content: string }>, targetParagraphId: string }): Promise<SpanTriageResponse> {
+  async identifySpans(paragraphText: string, fullDocumentContext?: { paragraphs: Array<{ id: string; content: string }>, targetParagraphId: string }, signal?: AbortSignal): Promise<SpanTriageResponse> {
     if (!this.apiKey) {
       throw new Error('API key not configured')
     }
@@ -53,6 +53,7 @@ export class AnthropicService {
     }
 
     const response = await fetch('/api/anthropic/messages', {
+      signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

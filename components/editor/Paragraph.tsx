@@ -133,6 +133,18 @@ export function Paragraph({
           return false
         }
         
+        // Simple validation - just check if extracted text is not empty
+        // More complex validation was causing valid highlights to be filtered out
+        console.log('Highlight validation:', {
+          paragraphId: id,
+          highlightId: highlight.id,
+          extractedText: `"${extractedText}"`,
+          expectedText: `"${highlight.fullText || highlight.text}"`,
+          startIndex: highlight.startIndex,
+          endIndex: highlight.endIndex,
+          contentLength: content.length
+        })
+        
         return true
       })
       
@@ -208,6 +220,18 @@ export function Paragraph({
     }
     
     if (editorRef.current.innerHTML !== htmlContent) {
+      const validCount = highlights.length > 0 ? highlights.filter(h => 
+        h.startIndex >= 0 && h.endIndex <= content.length && h.startIndex < h.endIndex
+      ).length : 0
+      
+      console.log('Updating paragraph HTML:', {
+        paragraphId: id,
+        highlightCount: highlights.length,
+        validHighlightCount: validCount,
+        contentLength: content.length,
+        hasActiveHighlight: !!activeHighlight
+      })
+      
       editorRef.current.innerHTML = htmlContent
       setLastRenderedContent(content)
       

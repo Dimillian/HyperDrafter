@@ -37,6 +37,12 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [analyzingParagraphs, setAnalyzingParagraphs] = useState<Set<string>>(new Set())
   const editorRef = useRef<HTMLDivElement>(null)
+  
+  // Track last analyzed content for each paragraph to prevent duplicate analysis
+  const lastAnalyzedContent = useRef<Record<string, string>>({})
+  
+  // Track ongoing analysis requests to cancel them if content changes
+  const analysisAbortControllers = useRef<Record<string, AbortController>>({})
 
   const analyzeChangedParagraph = useCallback(async (paragraphId: string) => {
     const paragraph = paragraphs.find(p => p.id === paragraphId)
@@ -44,8 +50,25 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       // Remove highlights for empty paragraphs
       const updatedHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
       onHighlightsChange(updatedHighlights)
+      delete lastAnalyzedContent.current[paragraphId] // Clear tracking for empty paragraphs
       return
     }
+
+    // Skip analysis if content hasn't changed since last analysis
+    if (lastAnalyzedContent.current[paragraphId] === paragraph.content) {
+      console.log(`Skipping duplicate analysis for paragraph ${paragraphId}`)
+      return
+    }
+
+    // Cancel any ongoing analysis for this paragraph
+    if (analysisAbortControllers.current[paragraphId]) {
+      analysisAbortControllers.current[paragraphId].abort()
+      console.log(`Cancelled ongoing analysis for paragraph ${paragraphId}`)
+    }
+
+    // Create new abort controller for this analysis
+    const abortController = new AbortController()
+    analysisAbortControllers.current[paragraphId] = abortController
 
     // Capture the content at the time analysis starts
     const analysisContent = paragraph.content
@@ -66,7 +89,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
         targetParagraphId: paragraphId
       }
       
-      const response = await anthropicService.identifySpans(analysisContent, fullDocumentContext)
+      const response = await anthropicService.identifySpans(analysisContent, fullDocumentContext, abortController.signal)
       
       // Check if the paragraph content has changed since analysis started
       const currentParagraph = paragraphs.find(p => p.id === paragraphId)
@@ -94,9 +117,21 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       const updatedHighlights = [...otherHighlights, ...paragraphHighlights]
       onHighlightsChange(updatedHighlights)
       
+      // Track that we've analyzed this content
+      lastAnalyzedContent.current[paragraphId] = analysisContent
+      
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log(`Analysis cancelled for paragraph ${paragraphId}`)
+        return // Don't log as error, this is expected
+      }
       console.error(`Failed to analyze paragraph ${paragraphId}:`, error)
     } finally {
+      // Clean up abort controller
+      if (analysisAbortControllers.current[paragraphId] === abortController) {
+        delete analysisAbortControllers.current[paragraphId]
+      }
+      
       // Remove paragraph from analyzing set
       setAnalyzingParagraphs(prev => {
         const newSet = new Set(prev)
@@ -138,6 +173,16 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     setParagraphs(prev => prev.map(p => 
       p.id === id ? { ...p, content } : p
     ))
+    
+    // Cancel any ongoing analysis for this paragraph since content changed
+    if (analysisAbortControllers.current[id]) {
+      analysisAbortControllers.current[id].abort()
+      delete analysisAbortControllers.current[id]
+      console.log(`Cancelled analysis due to content change in paragraph ${id}`)
+    }
+    
+    // Clear the analysis tracking for this paragraph since content changed
+    delete lastAnalyzedContent.current[id]
     
     // Remove highlights for this paragraph immediately since the text has changed
     const updatedHighlights = highlights.filter(h => h.paragraphId !== id)
