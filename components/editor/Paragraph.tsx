@@ -129,14 +129,12 @@ export function Paragraph({
       const validHighlights = highlights.filter(highlight => {
         // Check bounds
         if (highlight.startIndex < 0 || highlight.endIndex > content.length || highlight.startIndex >= highlight.endIndex) {
-          console.warn('Invalid highlight bounds:', highlight, 'Content length:', content.length)
           return false
         }
         
         // The highlight should extract valid text from content
         const extractedText = content.slice(highlight.startIndex, highlight.endIndex)
         if (!extractedText || extractedText.length === 0) {
-          console.warn('Highlight extracts empty text:', highlight)
           return false
         }
         
@@ -266,6 +264,32 @@ export function Paragraph({
     }
   }
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    
+    // Get plain text from clipboard
+    const text = e.clipboardData.getData('text/plain')
+    
+    // Insert the plain text at current cursor position
+    const selection = window.getSelection()
+    if (!selection?.rangeCount) return
+    
+    selection.deleteFromDocument()
+    const range = selection.getRangeAt(0)
+    const textNode = document.createTextNode(text)
+    range.insertNode(textNode)
+    
+    // Move cursor to end of inserted text
+    range.setStartAfter(textNode)
+    range.setEndAfter(textNode)
+    selection.removeAllRanges()
+    selection.addRange(range)
+    
+    // Trigger input event to update content
+    const inputEvent = new Event('input', { bubbles: true })
+    editorRef.current?.dispatchEvent(inputEvent)
+  }
+
   return (
     <div className={`relative group ${isActive ? 'z-10' : ''}`}>
       <div
@@ -275,6 +299,7 @@ export function Paragraph({
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
         onClick={handleClick}
+        onPaste={handlePaste}
         data-gramm="false"
         data-gramm_editor="false"
         data-enable-grammarly="false"
