@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HighlightCard } from './HighlightCard'
 
 interface SidebarProps {
@@ -15,6 +15,25 @@ interface SidebarProps {
 
 export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyzingParagraphs, activeParagraph, paragraphs, onParagraphSelect }: SidebarProps) {
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+  const [previousActiveParagraph, setPreviousActiveParagraph] = useState<string | null>(null)
+  
+  // Auto-expand all cards when paragraph becomes active
+  useEffect(() => {
+    if (activeParagraph && activeParagraph !== previousActiveParagraph) {
+      // Get all highlight IDs for the newly active paragraph
+      const paragraphHighlightIds = highlights
+        .filter(h => h.paragraphId === activeParagraph)
+        .map(h => h.id)
+      
+      // Add all these highlights to the expanded set
+      setExpandedNotes(prev => {
+        const newSet = new Set(prev)
+        paragraphHighlightIds.forEach(id => newSet.add(id))
+        return newSet
+      })
+    }
+    setPreviousActiveParagraph(activeParagraph)
+  }, [activeParagraph, highlights])
 
   const toggleNote = (id: string) => {
     setExpandedNotes(prev => {
@@ -48,15 +67,18 @@ export function Sidebar({ highlights, activeHighlight, onHighlightSelect, analyz
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         {/* Group highlights by paragraph */}
         {(() => {
-          // Combine all paragraph IDs from highlights and analyzing paragraphs
-          const allParagraphIds = [
-            ...new Set([
-              ...highlights.map((h: any) => h.paragraphId),
-              ...analyzingParagraphs.map(p => p.id)
-            ])
-          ]
+          // Get paragraph IDs that have highlights or are being analyzed
+          const paragraphsWithActivity = new Set([
+            ...highlights.map((h: any) => h.paragraphId),
+            ...analyzingParagraphs.map(p => p.id)
+          ])
+          
+          // Sort paragraphs in the same order as they appear in the editor
+          const sortedParagraphs = paragraphs
+            .filter(p => paragraphsWithActivity.has(p.id))
+            .map(p => p.id)
 
-          return allParagraphIds.map(paragraphId => {
+          return sortedParagraphs.map(paragraphId => {
             const paragraphHighlights = highlights.filter((h: any) => h.paragraphId === paragraphId)
             const isAnalyzing = analyzingParagraphs.some(p => p.id === paragraphId)
             const isActive = activeParagraph === paragraphId

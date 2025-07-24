@@ -89,14 +89,28 @@ export function Paragraph({
     }
   }, [isActive])
 
+  // Track previous highlights to detect changes
+  const prevHighlightsRef = useRef(highlights)
+  
   // Update content with highlights
   useEffect(() => {
     if (!editorRef.current || isUpdating) return
     
-    // Prevent update if user is actively typing
+    // Check if highlights have changed
+    const highlightsChanged = JSON.stringify(prevHighlightsRef.current) !== JSON.stringify(highlights)
+    if (highlightsChanged) {
+      console.log(`[PARAGRAPH ${id}] Highlights changed:`, {
+        oldCount: prevHighlightsRef.current.length,
+        newCount: highlights.length,
+        highlights: highlights.map(h => ({ id: h.id, type: h.type, text: h.text }))
+      })
+    }
+    prevHighlightsRef.current = highlights
+    
+    // Prevent update if user is actively typing UNLESS highlights have changed
     const isUserTyping = document.activeElement === editorRef.current
-    if (isUserTyping && content !== lastRenderedContent) {
-      // User is typing and content has changed - don't interfere
+    if (isUserTyping && content !== lastRenderedContent && !highlightsChanged) {
+      // User is typing and content has changed - don't interfere unless highlights changed
       return
     }
     
@@ -106,8 +120,8 @@ export function Paragraph({
     
     // Check if current textContent matches what we expect
     const currentTextContent = editorRef.current.textContent || ''
-    if (currentTextContent !== content) {
-      // Content mismatch - user might be typing, skip update
+    if (currentTextContent !== content && !highlightsChanged) {
+      // Content mismatch - user might be typing, skip update unless highlights changed
       return
     }
     
@@ -224,12 +238,13 @@ export function Paragraph({
         h.startIndex >= 0 && h.endIndex <= content.length && h.startIndex < h.endIndex
       ).length : 0
       
-      console.log('Updating paragraph HTML:', {
-        paragraphId: id,
+      console.log(`[PARAGRAPH ${id}] Updating HTML with highlights:`, {
         highlightCount: highlights.length,
         validHighlightCount: validCount,
         contentLength: content.length,
-        hasActiveHighlight: !!activeHighlight
+        hasActiveHighlight: !!activeHighlight,
+        highlightsChanged: highlightsChanged,
+        isUserTyping: isUserTyping
       })
       
       editorRef.current.innerHTML = htmlContent
