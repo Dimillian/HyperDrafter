@@ -15,6 +15,7 @@ export default function Home() {
           onHighlightsChange={setHighlights}
           activeHighlight={activeHighlight}
           onHighlightClick={setActiveHighlight}
+          highlights={highlights}
         />
       </div>
       <Sidebar 

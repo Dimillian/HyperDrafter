@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { KeyIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { KeyIcon, XMarkIcon, CpuChipIcon } from '@heroicons/react/24/outline'
+import { anthropicService } from '@/lib/ai/anthropic'
+import { ModelInfo } from '@/lib/ai/types'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -12,16 +14,52 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [apiKey, setApiKey] = useState('')
   const [isVisible, setIsVisible] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('claude-3-5-haiku-20241022')
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([])
+  const [isLoadingModels, setIsLoadingModels] = useState(false)
+  const [modelsError, setModelsError] = useState<string | null>(null)
 
   useEffect(() => {
     const savedKey = localStorage.getItem('anthropic_api_key')
+    const savedModel = localStorage.getItem('anthropic_model')
     if (savedKey) {
       setApiKey(savedKey)
     }
+    if (savedModel) {
+      setSelectedModel(savedModel)
+    }
   }, [])
+
+  useEffect(() => {
+    if (apiKey && isOpen) {
+      fetchModels()
+    }
+  }, [apiKey, isOpen])
+
+  const fetchModels = async () => {
+    setIsLoadingModels(true)
+    setModelsError(null)
+    
+    try {
+      anthropicService.updateCredentials()
+      const response = await anthropicService.fetchAvailableModels()
+      setAvailableModels(response.data)
+      
+      // If saved model is not in the list, select the first one
+      if (response.data.length > 0 && !response.data.find(m => m.id === selectedModel)) {
+        setSelectedModel(response.data[0].id)
+      }
+    } catch (error) {
+      console.error('Failed to fetch models:', error)
+      setModelsError(error instanceof Error ? error.message : 'Failed to fetch models')
+    } finally {
+      setIsLoadingModels(false)
+    }
+  }
 
   const handleSave = () => {
     localStorage.setItem('anthropic_api_key', apiKey)
+    localStorage.setItem('anthropic_model', selectedModel)
     setIsSaved(true)
     setTimeout(() => setIsSaved(false), 2000)
   }
@@ -107,6 +145,52 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
           </div>
+          
+          {/* Model Selection */}
+          {apiKey && (
+            <div className="mt-6 pt-6 border-t border-purple-500/20">
+              <div className="flex items-center mb-4">
+                <CpuChipIcon className="w-6 h-6 text-purple-400 mr-2" />
+                <h3 className="text-lg font-medium text-white">AI Model</h3>
+              </div>
+              
+              <p className="text-gray-400 mb-4 text-sm">
+                Choose the Claude model for AI analysis.
+              </p>
+              
+              {isLoadingModels ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+                </div>
+              ) : modelsError ? (
+                <div className="text-red-400 text-sm p-3 bg-red-900/20 rounded-lg">
+                  {modelsError}
+                </div>
+              ) : availableModels.length > 0 ? (
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/50 border border-purple-500/30 rounded-lg focus:outline-none focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-200 text-white"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.display_name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/50 border border-purple-500/30 rounded-lg focus:outline-none focus:border-purple-500 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-200 text-white"
+                >
+                  <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                  <option value="claude-4-20250514">Claude 4 Sonnet</option>
+                  <option value="claude-opus-4-20250514">Claude 4 Opus</option>
+                </select>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Footer */}

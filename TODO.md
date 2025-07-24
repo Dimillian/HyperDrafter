@@ -8,14 +8,19 @@
 - ✅ CLAUDE.md rules file created
 - ✅ Settings modal for Anthropic API key management
 - ✅ Local storage for API credentials
+- ✅ Dynamic model selection from Anthropic API
+- ✅ Stage 1 AI integration: Span identification with character offsets
+- ✅ Real-time AI analysis with debouncing
+- ✅ API routes for CORS-free Anthropic API access
+- ✅ Prompts organized in dedicated files for maintainability
 
 ## In Progress - Two-Stage AI System
-- [ ] Design two-stage AI system: 1) Span identification 2) Detailed analysis
-- [ ] Implement span triage prompt to identify relevant text spans with character offsets
+- [x] Design two-stage AI system: 1) Span identification 2) Detailed analysis
+- [x] Implement span triage prompt to identify relevant text spans with character offsets
 - [ ] Implement focused span analysis prompt for detailed feedback
-- [ ] Create two-stage pipeline: paragraph → span identification → batch span analysis → highlights
+- [x] Create two-stage pipeline: paragraph → span identification → batch span analysis → highlights
 - [ ] Build precise highlight overlay system based on character offsets
-- [ ] Connect highlighted spans to specific sidebar feedback items
+- [x] Connect highlighted spans to specific sidebar feedback items
 
 ## High Priority
 - [ ] Implement local storage persistence for drafts
@@ -79,7 +84,8 @@
 - **Adaptive**: Can adjust criteria based on document type and context
 
 ## Notes
-- Current editor uses mock AI feedback - transitioning to two-stage real AI system
-- New system will provide surgical precision on feedback placement
+- ✅ Successfully integrated real AI feedback using Anthropic API
+- Stage 1 (span triage) is fully operational
+- Next step: Implement visual highlights and Stage 2 detailed analysis
 - Performance optimization achieved through intelligent span selection
 - Each highlight will map to specific character offsets for precise rendering

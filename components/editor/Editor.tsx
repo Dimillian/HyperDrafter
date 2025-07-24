@@ -6,14 +6,17 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Header } from '@/components/ui'
 import { SettingsModal } from '@/components/ui/SettingsModal'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { anthropicService } from '@/lib/ai/anthropic'
+import { SpanIdentification } from '@/lib/ai/types'
 
 interface EditorProps {
   onHighlightsChange: (highlights: any[]) => void
   activeHighlight: string | null
   onHighlightClick: (id: string) => void
+  highlights: any[]
 }
 
-export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick }: EditorProps) {
+export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, highlights }: EditorProps) {
   const [paragraphs, setParagraphs] = useState<Array<{ id: string; content: string }>>([
     { id: '1', content: '' }
   ])
@@ -30,19 +33,37 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick }
   }, [debouncedContent])
 
   const analyzeContent = async () => {
-    const mockHighlights = paragraphs
-      .filter(p => p.content.trim())
-      .map((p, idx) => ({
-        id: `highlight-${p.id}-${idx}`,
-        paragraphId: p.id,
-        type: 'suggestion',
-        text: p.content.slice(0, 20),
-        startIndex: 0,
-        endIndex: 20,
-        note: 'Consider expanding on this point...'
-      }))
+    // Update service credentials in case they changed
+    anthropicService.updateCredentials()
     
-    onHighlightsChange(mockHighlights)
+    const allHighlights: any[] = []
+    
+    // Process each paragraph with content
+    for (const paragraph of paragraphs) {
+      if (!paragraph.content.trim()) continue
+      
+      try {
+        const response = await anthropicService.identifySpans(paragraph.content)
+        
+        // Convert spans to highlights
+        const paragraphHighlights = response.spans.map((span: SpanIdentification, idx: number) => ({
+          id: `highlight-${paragraph.id}-${idx}`,
+          paragraphId: paragraph.id,
+          type: span.type,
+          text: span.text.slice(0, 30) + (span.text.length > 30 ? '...' : ''),
+          startIndex: span.startOffset,
+          endIndex: span.endOffset,
+          note: span.reasoning,
+          confidence: span.confidence
+        }))
+        
+        allHighlights.push(...paragraphHighlights)
+      } catch (error) {
+        console.error(`Failed to analyze paragraph ${paragraph.id}:`, error)
+      }
+    }
+    
+    onHighlightsChange(allHighlights)
   }
 
   const handleParagraphChange = (id: string, content: string) => {
@@ -101,7 +122,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick }
                 onEnter={handleEnter}
                 onDelete={handleDelete}
                 onFocus={() => setActiveParagraph(paragraph.id)}
-                highlights={[]}
+                highlights={highlights.filter(h => h.paragraphId === paragraph.id)}
                 activeHighlight={activeHighlight}
                 onHighlightClick={onHighlightClick}
               />
