@@ -151,11 +151,11 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
   }
 
   return (
-    <div className="h-full bg-dark-secondary flex flex-col">
+    <div className="h-full flex flex-col">
       <Header>
         <button
           onClick={() => setIsSettingsOpen(true)}
-          className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all duration-200"
+          className="p-2 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-500/10 rounded-lg transition-all duration-200"
           title="Settings"
         >
           <Cog6ToothIcon className="w-5 h-5" />
@@ -163,10 +163,13 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       </Header>
       
       {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-8">
-          <div ref={editorRef} className="space-y-4">
-            {paragraphs.map((paragraph) => (
+      <div className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div 
+            ref={editorRef} 
+            className="editor-paper rounded-lg p-8 min-h-[800px] shadow-2xl space-y-2"
+          >
+            {paragraphs.map((paragraph, index) => (
               <Paragraph
                 key={paragraph.id}
                 id={paragraph.id}
@@ -179,6 +182,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
                 highlights={highlights.filter(h => h.paragraphId === paragraph.id)}
                 activeHighlight={activeHighlight}
                 onHighlightClick={onHighlightClick}
+                isFirstParagraph={index === 0}
               />
             ))}
           </div>

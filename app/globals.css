@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +15,24 @@
     --border: 0 0% 15%;
     --input: 0 0% 15%;
     --ring: 280 100% 50%;
+    --paper: 0 0% 5%;
+    --paper-foreground: 0 0% 92%;
+    --paper-border: 0 0% 12%;
+  }
+
+  [data-theme="light"] {
+    --primary: 280 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --background: 0 0% 96%;
+    --foreground: 0 0% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 280 100% 50%;
+    --paper: 0 0% 100%;
+    --paper-foreground: 0 0% 8%;
+    --paper-border: 0 0% 90%;
   }
 
   * {
@@ -23,6 +43,28 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer components {
+  .editor-paper {
+    font-family: 'Courier Prime', 'JetBrains Mono', 'Courier New', monospace;
+    background: hsl(var(--paper));
+    color: hsl(var(--paper-foreground));
+    border: 1px solid hsl(var(--paper-border));
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  [data-theme="light"] .editor-paper {
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 0 rgba(0, 0, 0, 0.05);
   }
 }
 
@@ -54,8 +96,13 @@
 /* ContentEditable placeholder */
 [contenteditable][data-placeholder]:empty::before {
   content: attr(data-placeholder);
-  color: rgb(75 85 99); /* text-gray-600 */
+  color: rgb(156 163 175); /* text-gray-400 */
   pointer-events: none;
+  font-style: italic;
+}
+
+[data-theme="dark"] [contenteditable][data-placeholder]:empty::before {
+  color: rgb(107 114 128); /* text-gray-500 in dark mode */
 }
 
 ::-webkit-scrollbar {

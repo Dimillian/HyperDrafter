@@ -13,6 +13,7 @@ interface ParagraphProps {
   highlights: any[]
   activeHighlight: string | null
   onHighlightClick: (id: string | null) => void
+  isFirstParagraph?: boolean
 }
 
 function getCaretPosition(element: HTMLElement): number {
@@ -75,7 +76,8 @@ export function Paragraph({
   onFocus,
   highlights,
   activeHighlight,
-  onHighlightClick
+  onHighlightClick,
+  isFirstParagraph = false
 }: ParagraphProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -262,19 +264,23 @@ export function Paragraph({
         data-enable-grammarly="false"
         spellCheck="false"
         className={`
-          w-full px-4 py-2 bg-transparent resize-none overflow-hidden
-          text-gray-100 placeholder-gray-600 min-h-[1.5rem]
-          border-l-2 transition-all duration-200
+          w-full px-4 bg-transparent resize-none overflow-hidden
+          border-l-4 transition-all duration-200
           focus:outline-none whitespace-pre-wrap
+          ${isFirstParagraph 
+            ? 'py-2 min-h-[2.5rem] text-2xl font-bold leading-tight'
+            : 'py-1 min-h-[1.5rem] text-base leading-normal'
+          }
           ${isActive 
-            ? 'border-primary-500 pl-5' 
-            : 'border-transparent hover:border-gray-700'
+            ? 'border-purple-500 pl-6 bg-purple-50/30 dark:bg-purple-900/10' 
+            : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
           }
         `}
-        data-placeholder={content === '' ? 'Start typing...' : undefined}
+        data-placeholder={content === '' ? (isFirstParagraph ? 'Enter your title...' : 'Start typing...') : undefined}
         style={{
           wordWrap: 'break-word',
-          overflowWrap: 'break-word'
+          overflowWrap: 'break-word',
+          fontFamily: 'inherit'
         }}
       />
     </div>

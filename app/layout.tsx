@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,9 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-dark min-h-screen antialiased`}>
-        <div className="fixed inset-0 bg-gradient-to-br from-primary-950/20 via-transparent to-primary-950/20 pointer-events-none" />
-        {children}
+      <body className={`${inter.className} min-h-screen antialiased`}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )
