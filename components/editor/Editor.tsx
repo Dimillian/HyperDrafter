@@ -35,6 +35,9 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
       return
     }
 
+    // Capture the content at the time analysis starts
+    const analysisContent = paragraph.content
+    
     // Update service credentials in case they changed
     anthropicService.updateCredentials()
     
@@ -45,10 +48,22 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
     })
     
     try {
-      const response = await anthropicService.identifySpans(paragraph.content)
+      // Prepare full document context
+      const fullDocumentContext = {
+        paragraphs: paragraphs,
+        targetParagraphId: paragraphId
+      }
+      
+      const response = await anthropicService.identifySpans(analysisContent, fullDocumentContext)
+      
+      // Check if the paragraph content has changed since analysis started
+      const currentParagraph = paragraphs.find(p => p.id === paragraphId)
+      if (!currentParagraph || currentParagraph.content !== analysisContent) {
+        console.log('Paragraph content changed during analysis - discarding highlights')
+        return
+      }
       
       // Convert spans to highlights with offset adjustment
-      // AI consistently provides offsets that are off by +1, so we adjust them
       const paragraphHighlights = response.spans.map((span: SpanIdentification, idx: number) => ({
         id: `highlight-${paragraph.id}-${idx}`,
         paragraphId: paragraph.id,
@@ -56,7 +71,7 @@ export function Editor({ onHighlightsChange, activeHighlight, onHighlightClick, 
         priority: span.priority,
         text: span.text.slice(0, 30) + (span.text.length > 30 ? '...' : ''),
         startIndex: Math.max(0, span.startOffset),
-        endIndex: Math.min(paragraph.content.length, span.endOffset),
+        endIndex: Math.min(analysisContent.length, span.endOffset),
         note: span.reasoning,
         confidence: span.confidence,
         fullText: span.text

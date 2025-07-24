@@ -79,6 +79,7 @@ export function Paragraph({
 }: ParagraphProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [lastRenderedContent, setLastRenderedContent] = useState('')
 
   useEffect(() => {
     if (isActive && editorRef.current) {
@@ -90,9 +91,23 @@ export function Paragraph({
   useEffect(() => {
     if (!editorRef.current || isUpdating) return
     
-    // Only restore cursor position if this paragraph is currently active
-    const shouldRestoreCursor = isActive && document.activeElement === editorRef.current
+    // Prevent update if user is actively typing
+    const isUserTyping = document.activeElement === editorRef.current
+    if (isUserTyping && content !== lastRenderedContent) {
+      // User is typing and content has changed - don't interfere
+      return
+    }
+    
+    // Only restore cursor position if this paragraph is currently active and not typing
+    const shouldRestoreCursor = isActive && document.activeElement === editorRef.current && !isUserTyping
     const currentPosition = shouldRestoreCursor ? getCaretPosition(editorRef.current) : 0
+    
+    // Check if current textContent matches what we expect
+    const currentTextContent = editorRef.current.textContent || ''
+    if (currentTextContent !== content) {
+      // Content mismatch - user might be typing, skip update
+      return
+    }
     
     // Create content with highlights
     let htmlContent = ''
@@ -101,42 +116,94 @@ export function Paragraph({
       // No highlights, just plain text
       htmlContent = content.replace(/\n/g, '<br>')
     } else {
-      // Sort highlights by start position
-      const sortedHighlights = [...highlights].sort((a, b) => a.startIndex - b.startIndex)
-      
-      let lastIndex = 0
-      
-      sortedHighlights.forEach((highlight) => {
-        // Add text before highlight
-        const beforeText = content.slice(lastIndex, highlight.startIndex)
-        htmlContent += beforeText.replace(/\n/g, '<br>')
-        
-        // Add highlighted text
-        const highlightText = content.slice(highlight.startIndex, highlight.endIndex)
-        const isActive = activeHighlight === highlight.id
-        
-        const priorityColors: Record<string, string> = {
-          high: isActive ? 'bg-red-500/40 border-b-2 border-red-400' : 'bg-red-500/20 border-b-2 border-red-500/60 hover:bg-red-500/30',
-          medium: isActive ? 'bg-purple-500/40 border-b-2 border-purple-400' : 'bg-purple-500/20 border-b-2 border-purple-500/60 hover:bg-purple-500/30',
-          low: isActive ? 'bg-gray-500/40 border-b-2 border-gray-400' : 'bg-gray-500/20 border-b-2 border-gray-500/60 hover:bg-gray-500/30'
+      // Validate and filter highlights first
+      const validHighlights = highlights.filter(highlight => {
+        // Check bounds
+        if (highlight.startIndex < 0 || highlight.endIndex > content.length || highlight.startIndex >= highlight.endIndex) {
+          console.warn('Invalid highlight bounds:', highlight, 'Content length:', content.length)
+          return false
         }
         
-        htmlContent += `<span 
-          class="highlight cursor-pointer transition-colors duration-200 ${priorityColors[highlight.priority] || 'bg-gray-500/20 border-b-2 border-gray-500/60'}" 
-          data-highlight-id="${highlight.id}"
-          title="${highlight.priority} priority ${highlight.type}: ${highlight.note}"
-        >${highlightText.replace(/\n/g, '<br>')}</span>`
+        // The highlight should extract valid text from content
+        const extractedText = content.slice(highlight.startIndex, highlight.endIndex)
+        if (!extractedText || extractedText.length === 0) {
+          console.warn('Highlight extracts empty text:', highlight)
+          return false
+        }
         
-        lastIndex = highlight.endIndex
+        return true
       })
       
-      // Add remaining text
-      const remainingText = content.slice(lastIndex)
-      htmlContent += remainingText.replace(/\n/g, '<br>')
+      if (validHighlights.length === 0) {
+        // No valid highlights, just plain text
+        htmlContent = content.replace(/\n/g, '<br>')
+      } else {
+        // Sort valid highlights by start position
+        const sortedHighlights = [...validHighlights].sort((a, b) => a.startIndex - b.startIndex)
+        
+        // Handle overlapping highlights by prioritizing longer spans
+        const nonOverlappingHighlights: typeof sortedHighlights = []
+        
+        for (const highlight of sortedHighlights) {
+          let hasOverlap = false
+          
+          // Check if this highlight overlaps with any already accepted highlight
+          for (const accepted of nonOverlappingHighlights) {
+            if (!(highlight.endIndex <= accepted.startIndex || highlight.startIndex >= accepted.endIndex)) {
+              // There's an overlap - prioritize the longer highlight
+              if ((highlight.endIndex - highlight.startIndex) > (accepted.endIndex - accepted.startIndex)) {
+                // Remove the shorter accepted highlight and add this longer one
+                const index = nonOverlappingHighlights.indexOf(accepted)
+                nonOverlappingHighlights.splice(index, 1)
+                nonOverlappingHighlights.push(highlight)
+                nonOverlappingHighlights.sort((a, b) => a.startIndex - b.startIndex)
+              }
+              hasOverlap = true
+              break
+            }
+          }
+          
+          if (!hasOverlap) {
+            nonOverlappingHighlights.push(highlight)
+            nonOverlappingHighlights.sort((a, b) => a.startIndex - b.startIndex)
+          }
+        }
+        
+        let lastIndex = 0
+        
+        nonOverlappingHighlights.forEach((highlight) => {
+            // Add text before highlight
+            const beforeText = content.slice(lastIndex, highlight.startIndex)
+            htmlContent += beforeText.replace(/\n/g, '<br>')
+            
+            // Add highlighted text
+            const highlightText = content.slice(highlight.startIndex, highlight.endIndex)
+            const isActive = activeHighlight === highlight.id
+            
+            const priorityColors: Record<string, string> = {
+              high: isActive ? 'bg-red-500/40 border-b-2 border-red-400' : 'bg-red-500/20 border-b-2 border-red-500/60 hover:bg-red-500/30',
+              medium: isActive ? 'bg-purple-500/40 border-b-2 border-purple-400' : 'bg-purple-500/20 border-b-2 border-purple-500/60 hover:bg-purple-500/30',
+              low: isActive ? 'bg-gray-500/40 border-b-2 border-gray-400' : 'bg-gray-500/20 border-b-2 border-gray-500/60 hover:bg-gray-500/30'
+            }
+            
+            htmlContent += `<span 
+              class="highlight cursor-pointer transition-colors duration-200 ${priorityColors[highlight.priority] || 'bg-gray-500/20 border-b-2 border-gray-500/60'}" 
+              data-highlight-id="${highlight.id}"
+              title="${highlight.priority} priority ${highlight.type}: ${highlight.note}"
+            >${highlightText.replace(/\n/g, '<br>')}</span>`
+            
+            lastIndex = highlight.endIndex
+          })
+          
+        // Add remaining text
+        const remainingText = content.slice(lastIndex)
+        htmlContent += remainingText.replace(/\n/g, '<br>')
+      }
     }
     
     if (editorRef.current.innerHTML !== htmlContent) {
       editorRef.current.innerHTML = htmlContent
+      setLastRenderedContent(content)
       
       // Only restore cursor position if this paragraph is currently focused
       if (shouldRestoreCursor) {
@@ -147,7 +214,7 @@ export function Paragraph({
         }, 0)
       }
     }
-  }, [content, highlights, activeHighlight, isUpdating, isActive])
+  }, [content, highlights, activeHighlight, isUpdating, isActive, lastRenderedContent])
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     if (isUpdating) return

@@ -1,9 +1,11 @@
 export const SPAN_TRIAGE_PROMPT = `You are a thoughtful writing coach that helps writers think more deeply about their ideas and improve the structure of their arguments. Focus on high-value feedback that helps the writer develop their thinking, not basic proofreading.
 
-Paragraph to analyze:
+{{DOCUMENT_CONTEXT}}
+
+**TARGET PARAGRAPH TO ANALYZE:**
 "{{TEXT}}"
 
-Identify specific text spans that would benefit from deeper thinking or structural improvement:
+Identify specific text spans in the TARGET PARAGRAPH that would benefit from deeper thinking or structural improvement. Consider how this paragraph fits within the broader document context:
 
 **HIGH PRIORITY (focus on these first):**
 - **Expansion opportunities**: Vague claims, unsupported statements, or ideas that need more development
@@ -59,6 +61,34 @@ CRITICAL:
 
 If no significant issues are found, return: {"spans": []}`
 
-export function buildSpanTriagePrompt(text: string): string {
-  return SPAN_TRIAGE_PROMPT.replace('{{TEXT}}', text)
+export function buildSpanTriagePrompt(text: string, fullDocumentContext?: { paragraphs: Array<{ id: string; content: string }>, targetParagraphId: string }): string {
+  let prompt = SPAN_TRIAGE_PROMPT
+  
+  // Build document context
+  let documentContextSection = ''
+  if (fullDocumentContext && fullDocumentContext.paragraphs.length > 1) {
+    const nonEmptyParagraphs = fullDocumentContext.paragraphs.filter(p => p.content.trim())
+    
+    if (nonEmptyParagraphs.length > 1) {
+      documentContextSection = `**FULL DOCUMENT CONTEXT:**
+${nonEmptyParagraphs.map((p, index) => {
+  const isTarget = p.id === fullDocumentContext.targetParagraphId
+  const marker = isTarget ? '>>> TARGET PARAGRAPH <<<' : `Paragraph ${index + 1}`
+  return `${marker}:\n"${p.content}"`
+}).join('\n\n')}
+
+When analyzing the target paragraph, consider:
+- How it connects to preceding and following paragraphs
+- Whether it advances the overall argument or narrative
+- If transitions are smooth and logical
+- Whether it introduces ideas that need support from other paragraphs
+- If it repeats or contradicts information elsewhere in the document
+
+`
+    }
+  }
+  
+  return prompt
+    .replace('{{DOCUMENT_CONTEXT}}', documentContextSection)
+    .replace('{{TEXT}}', text)
 }

@@ -43,7 +43,7 @@ export class AnthropicService {
     return data as ModelsResponse
   }
 
-  async identifySpans(paragraphText: string): Promise<SpanTriageResponse> {
+  async identifySpans(paragraphText: string, fullDocumentContext?: { paragraphs: Array<{ id: string; content: string }>, targetParagraphId: string }): Promise<SpanTriageResponse> {
     if (!this.apiKey) {
       throw new Error('API key not configured')
     }
@@ -65,7 +65,7 @@ export class AnthropicService {
         messages: [
           {
             role: 'user',
-            content: buildSpanTriagePrompt(paragraphText)
+            content: buildSpanTriagePrompt(paragraphText, fullDocumentContext)
           }
         ]
       })
