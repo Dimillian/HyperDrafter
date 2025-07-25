@@ -108,26 +108,13 @@ export const AIHighlight = Mark.create<AIHighlightOptions>({
   },
 
   renderHTML({ HTMLAttributes, mark }: { HTMLAttributes: any, mark: any }) {
-    const { type, isActive } = mark.attrs
-    
-    // Category-based styling matching the original implementation
-    const categoryColors: Record<string, string> = {
-      expansion: isActive ? 'bg-green-500/40 border-b-2 border-green-400' : 'bg-green-500/20 border-b-2 border-green-500/60 hover:bg-green-500/30',
-      structure: isActive ? 'bg-blue-500/40 border-b-2 border-blue-400' : 'bg-blue-500/20 border-b-2 border-blue-500/60 hover:bg-blue-500/30',
-      factual: isActive ? 'bg-red-500/40 border-b-2 border-red-400' : 'bg-red-500/20 border-b-2 border-red-500/60 hover:bg-red-500/30',
-      logic: isActive ? 'bg-orange-500/40 border-b-2 border-orange-400' : 'bg-orange-500/20 border-b-2 border-orange-500/60 hover:bg-orange-500/30',
-      clarity: isActive ? 'bg-purple-500/40 border-b-2 border-purple-400' : 'bg-purple-500/20 border-b-2 border-purple-500/60 hover:bg-purple-500/30',
-      evidence: isActive ? 'bg-yellow-500/40 border-b-2 border-yellow-400' : 'bg-yellow-500/20 border-b-2 border-yellow-500/60 hover:bg-yellow-500/30',
-      basic: isActive ? 'bg-gray-500/40 border-b-2 border-gray-400' : 'bg-gray-500/20 border-b-2 border-gray-500/60 hover:bg-gray-500/30'
-    }
-
-    const colorClass = categoryColors[type] || 'bg-gray-500/20 border-b-2 border-gray-500/60'
-    const title = `${type} (${mark.attrs.priority} priority): ${mark.attrs.note}`
+    const { type, priority, note } = mark.attrs
+    const title = `${type} (${priority} priority): ${note}`
 
     return [
       'span',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        class: `highlight cursor-pointer transition-colors duration-200 ${colorClass}`,
+        class: 'highlight',
         title,
       }),
       0,

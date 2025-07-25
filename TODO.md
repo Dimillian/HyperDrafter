@@ -9,6 +9,13 @@
 - ✅ **Document Context**: AI sees full document for better paragraph analysis
 - ✅ **Smooth Animations**: Polished transitions for paragraph selection in both editor and sidebar
 
+## High Priority - Code Refactoring & Architecture
+- ✅ **Type Safety**: Replace all `any` types with proper interfaces (Highlight, Paragraph, etc.)
+- ✅ **Split Editor.tsx**: Extract analysis logic, state management, and event handlers to separate hooks
+- ✅ **Extract Services**: Move AI analysis and highlight management to dedicated service layer
+- ✅ **Performance**: Implement React.memo, useMemo for expensive operations
+- [ ] **Error Handling**: Add proper error boundaries and user feedback for failures
+
 ## High Priority - Polish & Features
 - [ ] **Draft Persistence**: Auto-save to localStorage with draft management
 - [ ] **Export System**: Support for Markdown, TXT, and HTML export
@@ -40,3 +47,9 @@
 - **Cursor Positioning**: Fixed cursor positioning to preserve click location during paragraph selection
 - **Architecture Improvement**: Enhanced code maintainability and extensibility with TipTap's extension system
 - **UI Polish**: Maintained paper-like experience with improved visual feedback and interactions
+- **Major Refactoring**: Completed comprehensive refactoring of editor components:
+  - Created proper TypeScript interfaces for Highlight and Paragraph types
+  - Extracted useAnalyzeParagraph, useEditorState, and useEditorHandlers hooks
+  - Implemented analysis and highlight services for better separation of concerns
+  - Added React.memo to TipTapEditor and useMemo for performance optimization
+  - Reduced Editor.tsx from 285 lines to 117 lines

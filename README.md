@@ -45,12 +45,20 @@ npm run typecheck
 - **TipTap Marks**: Advanced highlighting system using TipTap's mark system with overlap resolution
 - **Theme Management**: React context with localStorage persistence
 - **Smooth Animations**: CSS transitions for paragraph selection and state changes
+- **Clean Architecture**: Separation of concerns with dedicated hooks and services
 
 ### AI Integration
+- **Service Layer**: Dedicated `analysisService` for AI operations with abort handling
 - **Two-stage Analysis**: Efficient span identification followed by detailed feedback
 - **Document Context**: Full document awareness for contextual paragraph analysis
 - **Category System**: Seven distinct feedback types with priority ordering
 - **Robust Parsing**: Handles AI responses with extra text and JSON formatting
+
+### State Management
+- **Custom Hooks**: Modular state management with `useEditorState`, `useAnalyzeParagraph`, and `useEditorHandlers`
+- **Service Pattern**: Separate services for analysis and highlight management
+- **Type Safety**: Full TypeScript coverage with proper interfaces
+- **Performance**: React.memo and useMemo optimizations throughout
 
 ## 📁 Project Structure
 
@@ -58,8 +66,8 @@ npm run typecheck
 HyperDrafter/
 ├── components/
 │   ├── editor/          # Core editing components
-│   │   ├── Editor.tsx   # Main editor orchestration
-│   │   └── TipTapEditor.tsx # TipTap editor wrapper
+│   │   ├── Editor.tsx   # Main editor orchestration (117 lines)
+│   │   └── TipTapEditor.tsx # TipTap editor wrapper with React.memo
 │   ├── sidebar/         # AI feedback interface
 │   │   ├── Sidebar.tsx  # Main sidebar with paragraph indicators
 │   │   └── HighlightCard.tsx # Individual feedback cards
@@ -72,8 +80,18 @@ HyperDrafter/
 │       └── extensions/  # Custom TipTap extensions
 │           ├── ParagraphWithId.ts # Paragraph node with unique IDs
 │           └── AIHighlight.ts     # AI highlight mark
+├── services/
+│   └── editor/          # Editor services
+│       ├── analysisService.ts  # AI analysis operations
+│       └── highlightService.ts # Highlight management
+├── types/
+│   └── editor.ts        # TypeScript interfaces (Paragraph, Highlight, etc.)
 ├── contexts/            # React contexts (theme, etc.)
 └── hooks/               # Custom React hooks
+    ├── useAnalyzeParagraph.ts  # AI analysis logic
+    ├── useEditorState.ts       # Editor state management
+    ├── useEditorHandlers.ts    # Event handlers
+    └── useParagraphDebounce.ts # Debouncing logic
 ```
 
 ## 🎯 Current Status
@@ -86,6 +104,10 @@ HyperDrafter has a **professional core** with:
 - ✅ Interactive sidebar with polished transitions
 - ✅ Document-context aware AI feedback
 - ✅ Preserved cursor positioning during paragraph selection
+- ✅ Clean architecture with separated concerns
+- ✅ Full TypeScript type safety
+- ✅ Performance optimizations with React.memo and useMemo
+- ✅ Service layer for AI and highlight management
 
 ## 🔮 Next Steps
 

@@ -6,23 +6,12 @@ import { Text } from '@tiptap/extension-text'
 import { History } from '@tiptap/extension-history'
 import { Dropcursor } from '@tiptap/extension-dropcursor'
 import { Gapcursor } from '@tiptap/extension-gapcursor'
-import { useEffect, useCallback } from 'react'
+import { useEffect, memo } from 'react'
 import { ParagraphWithId } from '@/lib/tiptap/extensions/ParagraphWithId'
 import { AIHighlight } from '@/lib/tiptap/extensions/AIHighlight'
+import { TipTapEditorProps, Paragraph } from '@/types/editor'
 
-interface TipTapEditorProps {
-  initialContent: Array<{ id: string; content: string }>
-  onParagraphCreate: (id: string) => void
-  onParagraphDelete: (id: string) => void
-  onParagraphFocus: (id: string) => void
-  onContentChange: (paragraphs: Array<{ id: string; content: string }>) => void
-  highlights: any[]
-  activeHighlight: string | null
-  onHighlightClick: (id: string | null) => void
-  activeParagraph: string | null
-}
-
-export function TipTapEditor({
+export const TipTapEditor = memo(function TipTapEditor({
   initialContent,
   onParagraphCreate,
   onParagraphDelete,
@@ -72,7 +61,7 @@ export function TipTapEditor({
     },
     onUpdate: ({ editor }) => {
       // Extract paragraphs and their content
-      const paragraphs: Array<{ id: string; content: string }> = []
+      const paragraphs: Paragraph[] = []
       
       editor.state.doc.descendants((node, pos) => {
         if (node.type.name === 'paragraphWithId') {
@@ -260,14 +249,110 @@ export function TipTapEditor({
           .slide-in-cards {
             animation: slideInFromLeft 0.3s ease-in-out;
           }
+
+          /* AI Highlight Styles */
+          .ProseMirror .highlight {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-radius: 2px;
+            padding: 1px 2px;
+          }
+
+          /* Category-based highlight colors */
+          .ProseMirror span[data-type="expansion"] {
+            background-color: rgba(34, 197, 94, 0.2);
+            border-bottom: 2px solid rgba(34, 197, 94, 0.6);
+          }
+          .ProseMirror span[data-type="expansion"]:hover {
+            background-color: rgba(34, 197, 94, 0.3);
+          }
+          .ProseMirror span[data-type="expansion"][data-is-active="true"] {
+            background-color: rgba(34, 197, 94, 0.4);
+            border-bottom-color: rgb(34, 197, 94);
+          }
+
+          .ProseMirror span[data-type="structure"] {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-bottom: 2px solid rgba(59, 130, 246, 0.6);
+          }
+          .ProseMirror span[data-type="structure"]:hover {
+            background-color: rgba(59, 130, 246, 0.3);
+          }
+          .ProseMirror span[data-type="structure"][data-is-active="true"] {
+            background-color: rgba(59, 130, 246, 0.4);
+            border-bottom-color: rgb(59, 130, 246);
+          }
+
+          .ProseMirror span[data-type="factual"] {
+            background-color: rgba(239, 68, 68, 0.2);
+            border-bottom: 2px solid rgba(239, 68, 68, 0.6);
+          }
+          .ProseMirror span[data-type="factual"]:hover {
+            background-color: rgba(239, 68, 68, 0.3);
+          }
+          .ProseMirror span[data-type="factual"][data-is-active="true"] {
+            background-color: rgba(239, 68, 68, 0.4);
+            border-bottom-color: rgb(239, 68, 68);
+          }
+
+          .ProseMirror span[data-type="logic"] {
+            background-color: rgba(249, 115, 22, 0.2);
+            border-bottom: 2px solid rgba(249, 115, 22, 0.6);
+          }
+          .ProseMirror span[data-type="logic"]:hover {
+            background-color: rgba(249, 115, 22, 0.3);
+          }
+          .ProseMirror span[data-type="logic"][data-is-active="true"] {
+            background-color: rgba(249, 115, 22, 0.4);
+            border-bottom-color: rgb(249, 115, 22);
+          }
+
+          .ProseMirror span[data-type="clarity"] {
+            background-color: rgba(168, 85, 247, 0.2);
+            border-bottom: 2px solid rgba(168, 85, 247, 0.6);
+          }
+          .ProseMirror span[data-type="clarity"]:hover {
+            background-color: rgba(168, 85, 247, 0.3);
+          }
+          .ProseMirror span[data-type="clarity"][data-is-active="true"] {
+            background-color: rgba(168, 85, 247, 0.4);
+            border-bottom-color: rgb(168, 85, 247);
+          }
+
+          .ProseMirror span[data-type="evidence"] {
+            background-color: rgba(234, 179, 8, 0.2);
+            border-bottom: 2px solid rgba(234, 179, 8, 0.6);
+          }
+          .ProseMirror span[data-type="evidence"]:hover {
+            background-color: rgba(234, 179, 8, 0.3);
+          }
+          .ProseMirror span[data-type="evidence"][data-is-active="true"] {
+            background-color: rgba(234, 179, 8, 0.4);
+            border-bottom-color: rgb(234, 179, 8);
+          }
+
+          .ProseMirror span[data-type="basic"] {
+            background-color: rgba(107, 114, 128, 0.2);
+            border-bottom: 2px solid rgba(107, 114, 128, 0.6);
+          }
+          .ProseMirror span[data-type="basic"]:hover {
+            background-color: rgba(107, 114, 128, 0.3);
+          }
+          .ProseMirror span[data-type="basic"][data-is-active="true"] {
+            background-color: rgba(107, 114, 128, 0.4);
+            border-bottom-color: rgb(107, 114, 128);
+          }
         `}</style>
         <EditorContent editor={editor} />
       </div>
     </div>
   )
-}
+})
 
-function generateInitialContent(paragraphs: Array<{ id: string; content: string }>) {
+// Only re-render when key props change
+TipTapEditor.displayName = 'TipTapEditor'
+
+function generateInitialContent(paragraphs: Paragraph[]) {
   if (paragraphs.length === 0) {
     return {
       type: 'doc',
