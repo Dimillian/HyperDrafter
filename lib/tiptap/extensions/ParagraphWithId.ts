@@ -149,7 +149,13 @@ export const ParagraphWithId = Node.create<ParagraphWithIdOptions>({
       Backspace: ({ editor }) => {
         const { state } = editor
         const { selection } = state
-        const { $from } = selection
+        const { $from, $to } = selection
+        
+        // Check if we're at the very start of the document
+        if ($from.pos === 1 && $to.pos === 1) {
+          // Prevent backspace at the very beginning of the first paragraph
+          return true
+        }
         
         // Check if we're at the start of an empty paragraph
         if ($from.parentOffset === 0 && $from.parent.textContent === '') {
@@ -169,6 +175,9 @@ export const ParagraphWithId = Node.create<ParagraphWithIdOptions>({
             this.options.onParagraphDelete(currentId)
             return editor.commands.deleteNode('paragraphWithId')
           }
+          
+          // If it's the only paragraph, prevent deletion
+          return true
         }
         
         return false // Let default backspace behavior handle other cases
@@ -177,12 +186,36 @@ export const ParagraphWithId = Node.create<ParagraphWithIdOptions>({
   },
 
   addProseMirrorPlugins() {
+    const updateFocusFromSelection = (view: any) => {
+      const { state } = view
+      const { selection } = state
+      const { $from } = selection
+      
+      // Find the paragraph containing the cursor
+      let paragraphNode = null
+      
+      for (let i = $from.depth; i >= 0; i--) {
+        const node = $from.node(i)
+        if (node.type.name === 'paragraphWithId') {
+          paragraphNode = node
+          break
+        }
+      }
+      
+      if (paragraphNode && this.options.onParagraphFocus) {
+        const id = paragraphNode.attrs.id
+        if (id) {
+          this.options.onParagraphFocus(id)
+        }
+      }
+    }
+
     return [
       new Plugin({
         key: new PluginKey('paragraphWithIdFocus'),
         props: {
           handleDOMEvents: {
-            focus: (view, event) => {
+            focus: (_view, event) => {
               const target = event.target as HTMLElement
               const paragraphEl = target.closest('[data-paragraph-id]')
               if (paragraphEl && this.options.onParagraphFocus) {
@@ -193,7 +226,7 @@ export const ParagraphWithId = Node.create<ParagraphWithIdOptions>({
               }
               return false
             },
-            click: (view, event) => {
+            click: (_view, event) => {
               // Also detect clicks within paragraphs
               const target = event.target as HTMLElement
               const paragraphEl = target.closest('[data-paragraph-id]')
@@ -205,6 +238,22 @@ export const ParagraphWithId = Node.create<ParagraphWithIdOptions>({
               }
               // Don't prevent default - let TipTap handle the cursor positioning
               return false
+            },
+            keydown: (view, _event) => {
+              // After any key press, check if focus needs updating
+              // Use setTimeout to ensure this runs after the key event is processed
+              setTimeout(() => {
+                updateFocusFromSelection(view)
+              }, 0)
+              return false
+            }
+          }
+        },
+        view() {
+          return {
+            update: (view) => {
+              // Update focus whenever selection changes
+              updateFocusFromSelection(view)
             }
           }
         }

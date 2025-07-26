@@ -226,7 +226,6 @@ export const TipTapEditor = memo(function TipTapEditor({
           
           .ProseMirror p[data-paragraph-id][data-is-active="true"] {
             border-left-color: #a855f7 !important;
-            padding-left: 1.5rem !important;
           }
           
           .ProseMirror p[data-paragraph-id]:hover:not([data-is-active="true"]) {

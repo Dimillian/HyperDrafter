@@ -31,6 +31,9 @@ export function useAnalyzeParagraph({
       return
     }
     
+    // Capture the content we're analyzing to validate later
+    const contentBeingAnalyzed = paragraph.content
+    
     // Add paragraph to analyzing set
     setAnalyzingParagraphs(prev => new Set([...prev, paragraphId]))
     
@@ -39,14 +42,21 @@ export function useAnalyzeParagraph({
       
       // Check if the paragraph still exists and content hasn't changed
       const currentParagraph = paragraphs.find(p => p.id === paragraphId)
-      if (!currentParagraph || currentParagraph.content !== paragraph.content) {
-        return
+      if (!currentParagraph || currentParagraph.content !== contentBeingAnalyzed) {
+        return // Don't update highlights if paragraph changed
       }
       
-      // Remove old highlights for this paragraph and add new ones
-      const otherHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
-      const updatedHighlights = [...otherHighlights, ...newHighlights]
-      onHighlightsChange(updatedHighlights)
+      // Update highlights atomically by getting fresh state
+      setAnalyzingParagraphs(currentAnalyzing => {
+        // Only update if this paragraph is still being analyzed (not cancelled)
+        if (currentAnalyzing.has(paragraphId)) {
+          // Remove old highlights for this paragraph and add new ones
+          const otherHighlights = highlights.filter(h => h.paragraphId !== paragraphId)
+          const updatedHighlights = [...otherHighlights, ...newHighlights]
+          onHighlightsChange(updatedHighlights)
+        }
+        return currentAnalyzing // Don't modify the analyzing set here
+      })
       
     } catch (error) {
       if (error instanceof Error && error.name !== 'AbortError') {

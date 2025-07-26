@@ -54,8 +54,11 @@ export function useEditorHandlers({
     if (newParagraphsCreated.length > 0 && localActiveParagraph) {
       const previousParagraph = paragraphs.find(p => p.id === localActiveParagraph)
       if (previousParagraph && previousParagraph.content.trim()) {
-        // Only analyze if content hasn't been analyzed yet AND it's not currently being analyzed
-        if (!analysisService.hasBeenAnalyzed(localActiveParagraph, previousParagraph.content) && !analyzingParagraphs.has(localActiveParagraph)) {
+        // Cancel any existing analysis for this paragraph to avoid conflicts
+        cancelAnalysis(localActiveParagraph)
+        
+        // Only analyze if content hasn't been analyzed yet
+        if (!analysisService.hasBeenAnalyzed(localActiveParagraph, previousParagraph.content)) {
           analyzeChangedParagraph(previousParagraph.id)
         }
       }
